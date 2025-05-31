@@ -8,7 +8,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Button } from '../components/ui/Button';
 
-const AdminPanel = () => {
+const AdminDashboard = () => {
   const { user } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,9 +16,13 @@ const AdminPanel = () => {
 
   const [pendingSpaces, setPendingSpaces] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return parseInt(params.get('page')) || 1;
+  });
   const [pagination, setPagination] = useState({ total: 0, pages: 0, limit: 10 });
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSpace, setSelectedSpace] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -28,7 +32,7 @@ const AdminPanel = () => {
     }
 
     if (location.pathname !== '/admin-dashboard') {
-      navigate('/admin-dashboard', { replace: true });
+      navigate(`/admin-dashboard?page=${page}`, { replace: true });
     }
 
     const fetchPendingSpaces = async () => {
@@ -38,21 +42,25 @@ const AdminPanel = () => {
         const response = await axios.get(`${apiUrl}/spaces/pending?page=${page}&limit=${pagination.limit}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log('Fetched pending spaces:', response.data.data.spaces);
-        const spaces = response.data.data.spaces || []; // Ensure spaces is always an array
+        console.log('Fetched pending spaces in frontend:', response.data.data.spaces);
+        const spaces = response.data.data.spaces || [];
+        // Debug each space to ensure _id exists
+        spaces.forEach(space => {
+          console.log('Space ID:', space._id, 'Name:', space.name);
+        });
         setPendingSpaces(spaces);
         setPagination(response.data.data.pagination || { total: 0, pages: 0, limit: 10 });
       } catch (error) {
         console.error('Error fetching pending spaces:', error.response?.data);
         toast.error(error.response?.data?.error?.message || 'Failed to fetch pending spaces');
-        setPendingSpaces([]); // Reset on error
+        setPendingSpaces([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchPendingSpaces();
-  }, [user, navigate, location, page, pagination.limit]);
+  }, [user, navigate, location.pathname, page, pagination.limit]);
 
   const handleManageSpace = async (spaceId, action) => {
     try {
@@ -69,6 +77,7 @@ const AdminPanel = () => {
       );
       toast.success(`Space ${action}ed successfully`);
       setPendingSpaces(pendingSpaces.filter((space) => space._id !== spaceId));
+      setSelectedSpace(null);
     } catch (error) {
       console.error(`Error managing space:`, error.message);
       toast.error(error.message || `Failed to ${action} space`);
@@ -79,7 +88,7 @@ const AdminPanel = () => {
     console.log('Changing page to:', newPage);
     if (newPage > 0 && newPage <= pagination.pages) {
       setPage(newPage);
-      navigate(`/admin-dashboard?page=${newPage}`, { replace: true });
+      navigate(`/admin-panel?page=${newPage}`, { replace: true });
     }
   };
 
@@ -126,61 +135,84 @@ const AdminPanel = () => {
               ) : filteredSpaces.length === 0 ? (
                 <p className="text-center text-gray-600">No pending spaces to review.</p>
               ) : (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredSpaces.map((space) => (
-                      <div key={space._id} className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-xl font-bold mb-2">{space.name}</h3>
-                        <p className="text-gray-600 mb-1"><strong>Type:</strong> {space.type}</p>
-                        <p className="text-gray-600 mb-1"><strong>Manager:</strong> {space.managerName}</p>
-                        <p className="text-gray-600 mb-1"><strong>Phone:</strong> {space.phone}</p>
-                        <p className="text-gray-600 mb-1"><strong>Address:</strong> {space.address}, {space.city}, {space.pincode}</p>
-                        <p className="text-gray-600 mb-1"><strong>Price:</strong> ₹{space.price}</p>
-                        <p className="text-gray-600 mb-3"><strong>Listing Type:</strong> {space.listingType}</p>
-                        {space.photos && space.photos.length > 0 && (
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* Left Section: List of Pending Spaces */}
+                  <div className="md:w-1/2">
+                    <h2 className="text-2xl font-bold mb-4">Pending Spaces</h2>
+                    <div className="grid grid-cols-1 gap-4">
+                      {filteredSpaces.map((space) => (
+                        <div
+                          key={space._id}
+                          className={`bg-white rounded-lg shadow-md p-4 cursor-pointer ${
+                            selectedSpace && selectedSpace._id === space._id ? 'border-2 border-blue-500' : ''
+                          }`}
+                          onClick={() => setSelectedSpace(space)}
+                        >
+                          <h3 className="text-lg font-bold">{space.name}</h3>
+                          <p className="text-gray-600"><strong>Type:</strong> {space.type}</p>
+                          <p className="text-gray-600"><strong>City:</strong> {space.city}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-center mt-6">
+                      <Button
+                        onClick={() => handlePageChange(page - 1)}
+                        disabled={page === 1}
+                        className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded mx-2"
+                      >
+                        Previous
+                      </Button>
+                      <span className="px-4 py-2">
+                        Page {page} of {pagination.pages}
+                      </span>
+                      <Button
+                        onClick={() => handlePageChange(page + 1)}
+                        disabled={page === pagination.pages}
+                        className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded mx-2"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Right Section: Selected Space Details and Actions */}
+                  <div className="md:w-1/2">
+                    {selectedSpace ? (
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <h2 className="text-2xl font-bold mb-4">{selectedSpace.name}</h2>
+                        <p className="text-gray-600 mb-1"><strong>Type:</strong> {selectedSpace.type}</p>
+                        <p className="text-gray-600 mb-1"><strong>Manager:</strong> {selectedSpace.managerName}</p>
+                        <p className="text-gray-600 mb-1"><strong>Phone:</strong> {selectedSpace.phone}</p>
+                        <p className="text-gray-600 mb-1"><strong>Address:</strong> {selectedSpace.address}, {selectedSpace.city}, {selectedSpace.pincode}</p>
+                        <p className="text-gray-600 mb-1"><strong>Price:</strong> ₹{selectedSpace.price}</p>
+                        <p className="text-gray-600 mb-3"><strong>Listing Type:</strong> {selectedSpace.listingType}</p>
+                        {selectedSpace.photos && selectedSpace.photos.length > 0 && (
                           <img
-                            src={space.photos[0]}
-                            alt={`${space.name} photo`}
+                            src={selectedSpace.photos[0]}
+                            alt={`${selectedSpace.name} photo`}
                             className="w-full h-48 object-cover rounded mb-3"
                           />
                         )}
                         <div className="flex justify-between">
                           <Button
-                            onClick={() => handleManageSpace(space._id, 'approve')}
+                            onClick={() => handleManageSpace(selectedSpace._id, 'approve')}
                             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
                           >
                             Approve
                           </Button>
                           <Button
-                            onClick={() => handleManageSpace(space._id, 'reject')}
+                            onClick={() => handleManageSpace(selectedSpace._id, 'reject')}
                             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
                           >
                             Reject
                           </Button>
                         </div>
                       </div>
-                    ))}
+                    ) : (
+                      <p className="text-center text-gray-600">Select a space to view details and take action.</p>
+                    )}
                   </div>
-                  <div className="flex justify-center mt-6">
-                    <Button
-                      onClick={() => handlePageChange(page - 1)}
-                      disabled={page === 1}
-                      className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded mx-2"
-                    >
-                      Previous
-                    </Button>
-                    <span className="px-4 py-2">
-                      Page {page} of {pagination.pages}
-                    </span>
-                    <Button
-                      onClick={() => handlePageChange(page + 1)}
-                      disabled={page === pagination.pages}
-                      className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded mx-2"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </>
+                </div>
               )}
             </div>
           </section>
@@ -191,4 +223,4 @@ const AdminPanel = () => {
   );
 };
 
-export default AdminPanel;
+export default AdminDashboard;

@@ -801,6 +801,52 @@ const createSubscription = async (req, res) => {
 // };
 
 // backend/src/api/space/controllers/spaceController.js
+// const getPendingSpaces = async (req, res) => {
+//   try {
+//     const userId = req.user?.id;
+//     if (!userId) throw new UnauthorizedError('User not authenticated');
+//     const user = await User.findById(userId);
+//     if (!user) throw new UnauthorizedError('User not found');
+//     if (user.role !== 'admin') throw new UnauthorizedError('Only admins can view pending spaces');
+
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 10;
+//     const skip = (page - 1) * limit;
+
+//     const pendingSpaces = await Space.find({ status: 'pending' })
+//       .populate('owner', 'email name')
+//       .skip(skip)
+//       .limit(limit);
+
+//     // Debug log to check the response data
+//     console.log('Pending spaces fetched:', pendingSpaces.map(space => ({ _id: space._id, name: space.name })));
+
+//     const total = await Space.countDocuments({ status: 'pending' });
+
+//     res.status(200).json({
+//       status: 'success',
+//       data: {
+//         spaces: pendingSpaces,
+//         pagination: {
+//           total,
+//           page,
+//           pages: Math.ceil(total / limit),
+//           limit,
+//         },
+//       },
+//     });
+//   } catch (err) {
+//     console.error(`Error in getPendingSpaces: ${err.message}`, {
+//       stack: err.stack,
+//       userId: req.user?.id,
+//     });
+//     res.status(err.statusCode || 500).json({
+//       error: { message: err.message || 'Internal server error', status: err.statusCode || 500 },
+//     });
+//   }
+// };
+// backend/src/api/space/controllers/spaceController.js
+// backend/src/api/space/controllers/spaceController.js
 const getPendingSpaces = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -813,20 +859,41 @@ const getPendingSpaces = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    // Fetch pending spaces with explicit _id inclusion
     const pendingSpaces = await Space.find({ status: 'pending' })
       .populate('owner', 'email name')
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .select('_id name type managerName phone address city pincode price listingType photos status'); // Explicitly include _id
 
-    // Debug log to check the response data
-    console.log('Pending spaces fetched:', pendingSpaces.map(space => ({ _id: space._id, name: space.name })));
+    // Debug log to check the raw response from Mongoose
+    console.log('Raw pending spaces from Mongoose:', pendingSpaces);
 
     const total = await Space.countDocuments({ status: 'pending' });
+
+    // Transform the response to ensure _id is included as a string
+    const spacesResponse = pendingSpaces.map(space => ({
+      _id: space._id.toString(), // Convert ObjectId to string
+      name: space.name,
+      type: space.type,
+      managerName: space.managerName,
+      phone: space.phone,
+      address: space.address,
+      city: space.city,
+      pincode: space.pincode,
+      price: space.price,
+      listingType: space.listingType,
+      photos: space.photos,
+      status: space.status,
+      owner: space.owner,
+    }));
+
+    console.log('Transformed spaces response:', spacesResponse);
 
     res.status(200).json({
       status: 'success',
       data: {
-        spaces: pendingSpaces,
+        spaces: spacesResponse,
         pagination: {
           total,
           page,
