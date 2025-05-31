@@ -969,7 +969,9 @@ const Registration = () => {
   const [showMapModal, setShowMapModal] = useState(false);
   const [markerPosition, setMarkerPosition] = useState(null);
   const [watchId, setWatchId] = useState(null);
-  const [spaceCount, setSpaceCount] = useState(null); // To store user's space count
+  const [spaceCount, setSpaceCount] = useState(null);
+  const [showPopup, setShowPopup] = useState(false); // For showing the popup
+  const [listingType, setListingType] = useState('free'); // To store listing type for popup
   const [formData, setFormData] = useState({
     spaceType: '',
     businessName: '',
@@ -1021,7 +1023,7 @@ const Registration = () => {
           setSpaceCount(userResponse.data.data.user?.spaceCount || 0);
         } catch (error) {
           console.error('Failed to fetch spaceCount:', error);
-          setSpaceCount(0); // Fallback to 0 if fetch fails
+          setSpaceCount(0);
           toast.error('Failed to fetch user data. Please try again.');
         }
       };
@@ -1034,7 +1036,6 @@ const Registration = () => {
       }
     }, 5000);
 
-    // Start live tracking on page load for location
     if (navigator.geolocation) {
       const id = navigator.geolocation.watchPosition(
         (position) => {
@@ -1105,7 +1106,7 @@ const Registration = () => {
     }
   };
 
-  // Handle photo uploads (using Cloudinary in backend)
+  // Handle photo uploads
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter((file) => {
@@ -1156,7 +1157,6 @@ const Registration = () => {
   const handleOpenMapModal = () => {
     setShowMapModal(true);
     setLocationError('');
-
     if (formData.latitude && formData.longitude) {
       setMarkerPosition({
         lat: parseFloat(formData.latitude),
@@ -1220,14 +1220,12 @@ const Registration = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Check if user is logged in
     if (!user || !user.id) {
       setShowLoginPopup(true);
       toast.error('Please log in to submit the form');
       return;
     }
 
-    // Validate required fields
     if (
       !formData.spaceType ||
       !formData.businessName ||
@@ -1243,13 +1241,11 @@ const Registration = () => {
       return;
     }
 
-    // Validate CCTV details if applicable
     if (formData.hasCCTV === 'yes' && (!formData.cameraCount || !formData.cameraAligned)) {
       toast.error('Please provide CCTV details');
       return;
     }
 
-    // Validate location coordinates
     if (!formData.latitude || !formData.longitude) {
       toast.error('Please select a location on the map');
       return;
@@ -1267,10 +1263,14 @@ const Registration = () => {
       return;
     }
 
+    if (isSubmitting) {
+      toast.info('Submission in progress. Please wait...');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Prepare space data for backend
       const spaceData = {
         name: formData.businessName || undefined,
         type: formData.spaceType || undefined,
@@ -1302,7 +1302,6 @@ const Registration = () => {
         agentId: formData.agentId || undefined,
       };
 
-      // Validate bank details if this is the user's first space
       if (spaceCount === 0) {
         if (
           !formData.bankDetails.accountNumber ||
@@ -1310,7 +1309,9 @@ const Registration = () => {
           !formData.bankDetails.bankName ||
           !formData.bankDetails.accountHolderName
         ) {
-          throw new Error('All bank details are required for your first space');
+          toast.error('All bank details are required for your first space');
+          setIsSubmitting(false);
+          return;
         }
         spaceData.bankDetails = {
           accountNumber: formData.bankDetails.accountNumber || undefined,
@@ -1329,63 +1330,47 @@ const Registration = () => {
       });
       console.log('Space creation response:', spaceResponse.data);
 
-      console.log('Sending subscription data to backend:', {
-        spaceId: spaceResponse.data.data.space.id,
-        plan: formData.listingType || 'free',
-        agentId: formData.agentId || undefined,
-      });
-      const subscriptionResponse = await axios.post(
-        `${apiUrl}/subscriptions`,
-        {
-          spaceId: spaceResponse.data.data.space.id,
-          plan: formData.listingType || 'free',
-          agentId: formData.agentId || undefined,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log('Subscription creation response:', subscriptionResponse.data);
+      // Set listing type and show popup
+      setListingType(formData.listingType);
+      setShowPopup(true);
 
-      toast.success('Space registered and subscribed successfully!');
-      setFormData({
-        spaceType: '',
-        businessName: '',
-        managerName: '',
-        phone: '',
-        email: '',
-        address: '',
-        city: '',
-        pincode: '',
-        landmark: '',
-        latitude: '',
-        longitude: '',
-        price: '',
-        bankDetails: {
-          accountNumber: '',
-          ifscCode: '',
-          bankName: '',
-          accountHolderName: '',
-        },
-        agentId: user?.id || '',
-        weekdayFootfall: '',
-        weekendFootfall: '',
-        brandingAreaSize: '',
-        hasCCTV: '',
-        cameraCount: '',
-        cameraAligned: '',
-        panNumber: '',
-        gstNumber: '',
-        heatMapping: '',
-        listingType: 'free',
-        preferredTiming: '',
-        photos: [],
-      });
-      navigate('/dashboard');
+      // If free listing, reset form and navigate after popup
+      if (formData.listingType === 'free') {
+        setFormData({
+          spaceType: '',
+          businessName: '',
+          managerName: '',
+          phone: '',
+          email: '',
+          address: '',
+          city: '',
+          pincode: '',
+          landmark: '',
+          latitude: '',
+          longitude: '',
+          price: '',
+          bankDetails: {
+            accountNumber: '',
+            ifscCode: '',
+            bankName: '',
+            accountHolderName: '',
+          },
+          agentId: user?.id || '',
+          weekdayFootfall: '',
+          weekendFootfall: '',
+          brandingAreaSize: '',
+          hasCCTV: '',
+          cameraCount: '',
+          cameraAligned: '',
+          panNumber: '',
+          gstNumber: '',
+          heatMapping: '',
+          listingType: 'free',
+          preferredTiming: '',
+          photos: [],
+        });
+      }
     } catch (error) {
-      // Improved error handling to log the full error object
       console.error('Submission error:', error);
       if (error.response) {
         console.error('Error response:', error.response.data);
@@ -1394,12 +1379,22 @@ const Registration = () => {
       }
       const errorMessage =
         error.response?.data?.error?.message || error.message || 'Registration failed. Please try again.';
-      toast.error(errorMessage, {
-        toastId: 'space-registration-error',
-      });
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handle Pay Now button click for premium listing
+  const handlePayNow = () => {
+    console.log('Proceeding to payment for premium listing');
+    navigate('/payment'); // Redirect to payment page
+  };
+
+  // Close the popup
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    navigate('/dashboard');
   };
 
   // Form validation function
@@ -1483,7 +1478,6 @@ const Registration = () => {
     <>
       <Navbar />
       <div className="min-h-screen flex flex-col">
-        {/* Login popup if user is not logged in */}
         {showLoginPopup && !user && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
@@ -1503,7 +1497,6 @@ const Registration = () => {
           </div>
         )}
 
-        {/* Map modal for location selection */}
         {showMapModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-[90vw] max-h-[80vh] mx-4 flex flex-col">
@@ -1563,6 +1556,39 @@ const Registration = () => {
           </div>
         )}
 
+        {/* Custom Popup for Registration Success */}
+        {showPopup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+              <h2 className="text-xl font-bold mb-4 text-center">
+                {listingType === 'free' ? 'Space Added' : 'Space Created'}
+              </h2>
+              <p className="text-gray-600 mb-6 text-center">
+                {listingType === 'free'
+                  ? 'Your space was added and is waiting to be verified.'
+                  : 'Your space was created. To use premium listing, please proceed to payment.'}
+              </p>
+              <div className="flex justify-center">
+                {listingType === 'premium' ? (
+                  <Button
+                    onClick={handlePayNow}
+                    className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+                  >
+                    Pay Now
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleClosePopup}
+                    className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+                  >
+                    Close
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <main className="flex-grow text-black placeholder:text-black">
           <section className="bg-gradient-to-r from-white to-[#D9D9F3] py-16">
             <div className="container mx-auto px-4 text-center">
@@ -1579,7 +1605,6 @@ const Registration = () => {
                 <div className="p-8">
                   <h2 className="text-2xl font-bold mb-6">Space Registration Form</h2>
                   <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Space Details Section */}
                     <div>
                       <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Space Details</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1818,13 +1843,11 @@ const Registration = () => {
                       </div>
                     </div>
 
-                    {/* Upload Photos Section */}
                     <div>
                       <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Upload Photos</h3>
                       <div className="space-y-4">{renderFileUpload()}</div>
                     </div>
 
-                    {/* Additional Details Section */}
                     <div>
                       <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">
                         Additional Details (Optional)
@@ -1926,7 +1949,6 @@ const Registration = () => {
                         </>
                       )}
 
-                      {/* Conditionally render bank details if spaceCount is 0 */}
                       {spaceCount === 0 && (
                         <div className="mt-4">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2051,13 +2073,12 @@ const Registration = () => {
                       </div>
                     </div>
 
-                    {/* Submit Button */}
                     <div className="pt-4">
                       <Button
                         type="submit"
                         className="w-full bg-[#6D4EFF] hover:bg-[#4261FF]"
                         size="lg"
-                        disabled={!isFormValid()}
+                        disabled={!isFormValid() || isSubmitting}
                       >
                         {isSubmitting ? 'Submitting...' : 'Submit Registration'}
                       </Button>
