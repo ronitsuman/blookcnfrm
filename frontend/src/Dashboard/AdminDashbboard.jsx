@@ -1,4 +1,4 @@
-// frontend/src/pages/AdminPanel.jsx
+// frontend/src/pages/AdminDashboard.jsx
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Button } from '../components/ui/Button';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user } = useSelector((state) => state.user);
@@ -23,6 +24,9 @@ const AdminDashboard = () => {
   const [pagination, setPagination] = useState({ total: 0, pages: 0, limit: 10 });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpace, setSelectedSpace] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState([]);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -44,7 +48,6 @@ const AdminDashboard = () => {
         });
         console.log('Fetched pending spaces in frontend:', response.data.data.spaces);
         const spaces = response.data.data.spaces || [];
-        // Debug each space to ensure _id exists
         spaces.forEach(space => {
           console.log('Space ID:', space._id, 'Name:', space.name);
         });
@@ -70,7 +73,7 @@ const AdminDashboard = () => {
       }
 
       const token = localStorage.getItem('token');
-      await axios.post(
+      await axios.patch(
         `${apiUrl}/spaces/manage-status`,
         { spaceId, action },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -88,7 +91,7 @@ const AdminDashboard = () => {
     console.log('Changing page to:', newPage);
     if (newPage > 0 && newPage <= pagination.pages) {
       setPage(newPage);
-      navigate(`/admin-panel?page=${newPage}`, { replace: true });
+      navigate(`/admin-dashboard?page=${newPage}`, { replace: true });
     }
   };
 
@@ -96,6 +99,30 @@ const AdminDashboard = () => {
     setSearchQuery(e.target.value);
     setPage(1);
     navigate(`/admin-dashboard?page=1`, { replace: true });
+  };
+
+  const openFullScreen = (photos, index) => {
+    setSelectedPhotos(photos);
+    setCurrentImageIndex(index);
+    setIsFullScreen(true);
+  };
+
+  const closeFullScreen = () => {
+    setIsFullScreen(false);
+    setSelectedPhotos([]);
+    setCurrentImageIndex(0);
+  };
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prevIndex) =>
+      prevIndex === 0 ? selectedPhotos.length - 1 : prevIndex - 1
+    );
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prevIndex) =>
+      prevIndex === selectedPhotos.length - 1 ? 0 : prevIndex + 1
+    );
   };
 
   const filteredSpaces = pendingSpaces.filter(
@@ -186,12 +213,23 @@ const AdminDashboard = () => {
                         <p className="text-gray-600 mb-1"><strong>Address:</strong> {selectedSpace.address}, {selectedSpace.city}, {selectedSpace.pincode}</p>
                         <p className="text-gray-600 mb-1"><strong>Price:</strong> ₹{selectedSpace.price}</p>
                         <p className="text-gray-600 mb-3"><strong>Listing Type:</strong> {selectedSpace.listingType}</p>
-                        {selectedSpace.photos && selectedSpace.photos.length > 0 && (
-                          <img
-                            src={selectedSpace.photos[0]}
-                            alt={`${selectedSpace.name} photo`}
-                            className="w-full h-48 object-cover rounded mb-3"
-                          />
+                        {selectedSpace.photos && selectedSpace.photos.length > 0 ? (
+                          <div className="flex gap-2 mb-3">
+                            {selectedSpace.photos.map((photo, index) => (
+                              <img
+                                key={index}
+                                src={photo}
+                                alt={`${selectedSpace.name} photo ${index + 1}`}
+                                className="w-16 h-16 object-cover rounded cursor-pointer"
+                                onClick={() => openFullScreen(selectedSpace.photos, index)}
+                                onError={(e) => {
+                                  e.target.src = '/placeholder-space.jpg';
+                                }}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-600 mb-3">No photos available</p>
                         )}
                         <div className="flex justify-between">
                           <Button
@@ -216,6 +254,38 @@ const AdminDashboard = () => {
               )}
             </div>
           </section>
+
+          {/* Full-Screen Image Modal */}
+          {isFullScreen && selectedPhotos.length > 0 && (
+            <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
+              <button
+                onClick={closeFullScreen}
+                className="absolute top-4 right-4 text-white p-2 rounded-full hover:bg-gray-700 transition"
+              >
+                <X size={24} />
+              </button>
+              <button
+                onClick={handlePrevImage}
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white p-2 rounded-full hover:bg-gray-700 transition"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button
+                onClick={handleNextImage}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white p-2 rounded-full hover:bg-gray-700 transition"
+              >
+                <ChevronRight size={24} />
+              </button>
+              <img
+                src={selectedPhotos[currentImageIndex]}
+                alt={`Space Image ${currentImageIndex + 1}`}
+                className="max-w-full max-h-full object-contain"
+              />
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {selectedPhotos.length}
+              </div>
+            </div>
+          )}
         </main>
         <Footer />
       </div>

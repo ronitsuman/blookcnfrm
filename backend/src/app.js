@@ -8,6 +8,9 @@ import authRoutes from './api/auth/routes/authRoutes.js';
 import userRoutes from './api/user/routes/userRoutes.js';
 import { loadEnv } from './shared/config/env.js';
 import spaceRoutes from './api/space/routes/spaceRoutes.js';
+import Analytics from './api/Analytics/model/Analytics.js';
+import analyticsRoutes from './api/Analytics/router/analyticsRoute.js';
+import campaignRoutes from './api/campaign/router/campaignRoute.js';
 
 loadEnv();
 
@@ -30,6 +33,9 @@ app.use(fileUpload());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/spaces',spaceRoutes)
+app.use('/api/analytics', analyticsRoutes)
+app.use('/api/campaigns', campaignRoutes)
+
 
 // Health check
 app.get('/health', (req, res) => {

@@ -1097,6 +1097,248 @@
 // };
 
 // export default BrowseSpaces;
+// import { useEffect, useState, useCallback, useMemo } from 'react';
+// import { useSelector, useDispatch, shallowEqual } from 'react-redux';
+// import { useNavigate } from 'react-router-dom';
+// import { setFilter, resetFilters } from '../redux/filterSlice';
+// import { Button } from '../components/ui/Button';
+// import { Search, MapPin, Star } from 'lucide-react';
+// import Navbar from '../components/Navbar';
+// import Footer from '../components/Footer';
+// import SpaceCard from '../components/SpaceCard';
+// import { debounce } from 'lodash';
+
+// const BrowseSpaces = () => {
+//   const [spaces, setSpaces] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const dispatch = useDispatch();
+//   const navigate = useNavigate();
+
+//   // Memoized selector with shallowEqual
+//   const filters = useSelector((state) => state.filters, shallowEqual);
+
+//   // Memoized safeFilters with default values
+//   const safeFilters = useMemo(() => ({
+//     searchQuery: '',
+//     city: '',
+//     spaceType: '',
+//     priceRange: '',
+//     ...filters
+//   }), [filters]);
+
+//   // Debounced search function
+//   const debouncedSearch = useCallback(
+//     debounce((searchValue) => {
+//       dispatch(setFilter({ searchQuery: searchValue }));
+//     }, 500),
+//     [dispatch]
+//   );
+
+//   const handleSearchChange = (e) => {
+//     const value = e.target.value;
+//     dispatch(setFilter({ searchQuery: value }));
+//     debouncedSearch(value);
+//   };
+
+//   const handleFilterChange = (e) => {
+//     const { name, value } = e.target;
+//     dispatch(setFilter({ [name]: value }));
+//   };
+
+//   const handleSpaceClick = (spaceId) => {
+//     navigate(`/spaces/${spaceId}`);
+//   };
+
+//   useEffect(() => {
+//     const fetchSpaces = async () => {
+//       try {
+//         setLoading(true);
+//         setError(null);
+        
+//         const params = new URLSearchParams();
+//         Object.entries(safeFilters).forEach(([key, value]) => {
+//           if (value) params.append(key, value);
+//         });
+
+//         const res = await fetch(`http://localhost:5000/api/spaces/getallspaces?${params.toString()}`);
+//         if (!res.ok) throw new Error('Failed to fetch spaces');
+//         const data = await res.json();
+//         console.log(data)
+//         setSpaces(data || []);
+//       } catch (err) {
+//         console.error('Error fetching spaces:', err);
+//         setError(err.message);
+//         setSpaces([]);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     const timer = setTimeout(fetchSpaces, 300);
+//     return () => clearTimeout(timer);
+//   }, [safeFilters]);
+
+//   return (
+//     <div className="min-h-screen flex flex-col bg-gray-50">
+//       <Navbar />
+      
+//       <main className="flex-grow">
+//         {/* Filter Section */}
+//         <section className="py-8 bg-white border-b text-black">
+//           <div className="container mx-auto px-4">
+//             <div className="flex flex-col md:flex-row gap-4">
+//               {/* Search Input */}
+//               <div className="relative flex-grow">
+//                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+//                   <Search className="h-5 w-5 text-gray-400" />
+//                 </div>
+//                 <input
+//                   type="text"
+//                   name="searchQuery"
+//                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4261FF] focus:border-[#4261FF] transition duration-150 ease-in-out sm:text-sm"
+//                   placeholder="Search by location, type, or keywords..."
+//                   value={safeFilters.searchQuery}
+//                   onChange={handleSearchChange}
+//                 />
+//               </div>
+              
+//               {/* Filter Dropdowns */}
+//               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+//                 {/* City/Area */}
+//                 <select
+//                   name="city"
+//                   className="p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#4261FF] focus:border-[#4261FF]"
+//                   value={safeFilters.city}
+//                   onChange={handleFilterChange}
+//                 >
+//                   <option value="">City / Area</option>
+//                   <option value="delhi">Delhi NCR</option>
+//                   <option value="mumbai">Mumbai</option>
+//                   <option value="bangalore">Bangalore</option>
+//                   <option value="pune">Pune</option>
+//                   <option value="chennai">Chennai</option>
+//                 </select>
+
+//                 {/* Space Type */}
+//                 <select
+//                   name="spaceType"
+//                   className="p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#4261FF] focus:border-[#4261FF]"
+//                   value={safeFilters.spaceType}
+//                   onChange={handleFilterChange}
+//                 >
+//                   <option value="">Space Type</option>
+//                   <option value="retail">Retail</option>
+//                   <option value="restaurant">Restaurant/Café</option>
+//                   <option value="society">Residential Society</option>
+//                   <option value="office">Office Space</option>
+//                   <option value="clinic">Clinic/Hospital</option>
+//                   <option value="salon">Salon</option>
+//                 </select>
+
+//                 {/* Price Range */}
+//                 <select
+//                   name="priceRange"
+//                   className="p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#4261FF] focus:border-[#4261FF]"
+//                   value={safeFilters.priceRange}
+//                   onChange={handleFilterChange}
+//                 >
+//                   <option value="">Price Range</option>
+//                   <option value="low">₹1K-5K / month</option>
+//                   <option value="medium">₹5K-10K / month</option>
+//                   <option value="high">₹10K-25K / month</option>
+//                   <option value="premium">₹25K+ / month</option>
+//                 </select>
+//               </div>
+
+//               <div className="flex gap-2">
+//                 <Button 
+//                   className="bg-[#4261FF] hover:bg-[#6D4EFF]"
+//                 >
+//                   Apply Filters
+//                 </Button>
+//                 <Button 
+//                   variant="outline"
+//                   onClick={() => dispatch(resetFilters())}
+//                 >
+//                   Reset
+//                 </Button>
+//               </div>
+//             </div>
+//           </div>
+//         </section>
+
+//         {/* Spaces Listing */}
+//         <section className="py-12 bg-gray-50">
+//           <div className="container mx-auto px-4">
+//             <div className="flex justify-between items-center mb-8">
+//               <h2 className="text-2xl font-bold text-black">
+//                 Available Spaces ({spaces.length})
+//               </h2>
+//             </div>
+
+//             {error ? (
+//               <div className="text-center py-12">
+//                 <div className="text-red-500 mb-4">Error: {error}</div>
+//                 <Button 
+//                   variant="outline"
+//                   onClick={() => window.location.reload()}
+//                 >
+//                   Retry
+//                 </Button>
+//               </div>
+//             ) : loading ? (
+//               <div className="flex justify-center items-center h-64">
+//                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+//               </div>
+//             ) : spaces.length === 0 ? (
+//               <div className="text-center py-12">
+//                 <Search className="mx-auto h-12 w-12 text-gray-400" />
+//                 <h3 className="mt-2 text-lg font-medium text-gray-900">No spaces found</h3>
+//                 <p className="mt-1 text-gray-500">
+//                   {Object.values(safeFilters).some(Boolean) 
+//                     ? "Try adjusting your filters"
+//                     : "No spaces available at the moment"}
+//                 </p>
+//               </div>
+//             ) : (
+//               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//                 {spaces.map((space) => (
+//                   <div 
+//                     key={space._id} 
+//                     onClick={() => handleSpaceClick(space._id)}
+//                     className="cursor-pointer"
+//                   >
+//                     <SpaceCard 
+//                       space={{
+//                         ...space,
+//                         photos: space.photos || {},
+//                         location: space.location || {}
+//                       }} 
+//                     />
+//                     {space.listingType === 'premium' && (
+//                       <div className="absolute top-2 left-2 bg-yellow-400 text-black px-2 py-1 rounded-md flex items-center text-xs font-bold z-10">
+//                         <Star size={12} className="mr-1 fill-black" />
+//                         PREMIUM
+//                       </div>
+//                     )}
+//                   </div>
+//                 ))}
+//               </div>
+//             )}
+//           </div>
+//         </section>
+//       </main>
+
+//       <Footer />
+//     </div>
+//   );
+// };
+
+// export default BrowseSpaces;
+
+
+
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -1115,10 +1357,8 @@ const BrowseSpaces = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Memoized selector with shallowEqual
   const filters = useSelector((state) => state.filters, shallowEqual);
 
-  // Memoized safeFilters with default values
   const safeFilters = useMemo(() => ({
     searchQuery: '',
     city: '',
@@ -1127,7 +1367,6 @@ const BrowseSpaces = () => {
     ...filters
   }), [filters]);
 
-  // Debounced search function
   const debouncedSearch = useCallback(
     debounce((searchValue) => {
       dispatch(setFilter({ searchQuery: searchValue }));
@@ -1147,6 +1386,7 @@ const BrowseSpaces = () => {
   };
 
   const handleSpaceClick = (spaceId) => {
+    console.log('Navigating to space with ID:', spaceId); // Debug log
     navigate(`/spaces/${spaceId}`);
   };
 
@@ -1158,14 +1398,40 @@ const BrowseSpaces = () => {
         
         const params = new URLSearchParams();
         Object.entries(safeFilters).forEach(([key, value]) => {
-          if (value) params.append(key, value);
+          if (value) {
+            if (key === 'priceRange') {
+              // Map priceRange to minPrice and maxPrice
+              if (value === 'low') {
+                params.append('minPrice', 1000);
+                params.append('maxPrice', 5000);
+              } else if (value === 'medium') {
+                params.append('minPrice', 5000);
+                params.append('maxPrice', 10000);
+              } else if (value === 'high') {
+                params.append('minPrice', 10000);
+                params.append('maxPrice', 25000);
+              } else if (value === 'premium') {
+                params.append('minPrice', 25000);
+              }
+            } else if (key === 'spaceType') {
+              // Map spaceType to type
+              params.append('type', value);
+            } else {
+              params.append(key, value);
+            }
+          }
         });
 
         const res = await fetch(`http://localhost:5000/api/spaces/getallspaces?${params.toString()}`);
         if (!res.ok) throw new Error('Failed to fetch spaces');
         const data = await res.json();
-        console.log(data)
-        setSpaces(data || []);
+        console.log('Fetched spaces data:', data); // Debug log
+        const spacesData = data.data || [];
+        // Debug each space to ensure _id exists
+        spacesData.forEach(space => {
+          console.log('Space ID:', space._id, 'Name:', space.name);
+        });
+        setSpaces(spacesData);
       } catch (err) {
         console.error('Error fetching spaces:', err);
         setError(err.message);
@@ -1305,14 +1571,14 @@ const BrowseSpaces = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {spaces.map((space) => (
                   <div 
-                    key={space._id} 
+                    key={space._id || `space-${Math.random()}`} // Fallback key if _id is undefined
                     onClick={() => handleSpaceClick(space._id)}
                     className="cursor-pointer"
                   >
                     <SpaceCard 
                       space={{
                         ...space,
-                        photos: space.photos || {},
+                        photos: space.photos || [],
                         location: space.location || {}
                       }} 
                     />

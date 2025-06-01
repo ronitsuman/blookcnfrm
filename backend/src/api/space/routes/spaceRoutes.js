@@ -15,9 +15,9 @@ router.use((req, res, next) => {
 // Corrected route order
 router.post('/', authenticate, createSpace);
 router.post('/subscriptions', protect, createSubscription);
-router.get('/', getAllSpaces); // Public route to get all approved spaces
+router.get('/getallspaces', getAllSpaces); // Public route to get all approved spaces
 router.get('/pending', adminProtect, getPendingSpaces); // Admin-only pending spaces
 router.get('/:spaceId', getSpace); // Public route to get a specific space
-router.post('/manage-status', adminProtect, manageSpaceStatus);
+router.patch('/manage-status', adminProtect, manageSpaceStatus);
 
 export default router;

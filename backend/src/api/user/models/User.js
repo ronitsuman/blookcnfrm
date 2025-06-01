@@ -217,6 +217,7 @@ const userSchema = new mongoose.Schema({
   },
   verificationOTP: String,
   verificationOTPExpiry: Date,
+  
 }, {
   timestamps: true,
 });

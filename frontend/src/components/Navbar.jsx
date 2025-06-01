@@ -40,7 +40,7 @@ const Navbar = () => {
   // Dashboard item based on user role
   const loggedInItems = (() => {
     switch (user?.role) {
-      case 'Admin':
+      case 'admin':
         return [
           { href: '/admin-dashboard', label: 'Admin Dashboard', icon: <LayoutDashboard size={16} className="mr-1" /> },
         ];
@@ -60,9 +60,9 @@ const Navbar = () => {
         return [
           { href: '/blookforceagent-dashboard', label: 'Blookforce-Agent Dashboard', icon: <LayoutDashboard size={16} className="mr-1" /> },
         ];
-      case 'guest':
+      case 'telecaller':
         return [
-          { href: '/guest-dashboard', label: 'Guest Dashboard', icon: <LayoutDashboard size={16} className="mr-1" /> },
+          { href: '/telecaller', label: 'Telecaller Dashboard', icon: <LayoutDashboard size={16} className="mr-1" /> },
         ];
       default:
         return [];
