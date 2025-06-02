@@ -6,7 +6,7 @@ import filterReducer from './filterSlice'
 const store = configureStore({
   reducer: {
     user: userReducer,
-    filer:filterReducer,
+    filters:filterReducer,
   },
 });
 

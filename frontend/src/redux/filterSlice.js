@@ -1,27 +1,29 @@
-// filtersSlice.js
 import { createSlice } from '@reduxjs/toolkit';
 
-const initialState = {
-  searchQuery: '',
-  city: '',
-  spaceType: '',
-  footfallRange: '',
-  priceRange: '',
-  weekdayFootfall: '',
-  weekendFootfall: '',
-  ageGroup: ''
-};
-
-const filtersSlice = createSlice({
+const filterSlice = createSlice({
   name: 'filters',
-  initialState,
+  initialState: {
+    searchQuery: '',
+    city: '',
+    spaceType: '',
+    priceRange: '',
+    ageGroupMix: '',
+  },
   reducers: {
-    setFilter: (state, action) => {
+    setFilter(state, action) {
       return { ...state, ...action.payload };
     },
-    resetFilters: () => initialState
-  }
+    resetFilters() {
+      return {
+        searchQuery: '',
+        city: '',
+        spaceType: '',
+        priceRange: '',
+        ageGroupMix: '',
+      };
+    },
+  },
 });
 
-export const { setFilter, resetFilters } = filtersSlice.actions;
-export default filtersSlice.reducer;
+export const { setFilter, resetFilters } = filterSlice.actions;
+export default filterSlice.reducer;

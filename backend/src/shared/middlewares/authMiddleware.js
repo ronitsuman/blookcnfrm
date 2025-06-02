@@ -1,36 +1,48 @@
-// src/middlewares/authMiddleware.js
 import jwt from 'jsonwebtoken';
-import { UnauthorizedError } from '../../common/error/index.js';;
+import User from '../../api/user/models/User.js';
+import { UnauthorizedError, ForbiddenError } from '../../common/error/index.js';
 
-const authenticate = (req, res, next) => {
+export const authenticate = async (req, res, next) => {
   try {
-    // Check if Authorization header exists
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
       throw new UnauthorizedError('No token provided');
     }
 
-    // Extract the token from the header
-    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
 
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
-    if (!decoded) {
-      throw new UnauthorizedError('Invalid token');
+    if (!user) {
+      throw new UnauthorizedError('User not found');
     }
 
-    // Add user details to the request object
-    req.user = decoded; // decoded will have id, email, role
+    req.user = { id: user._id, role: user.role };
     next();
-  } catch (err) {
-    console.error(`Error in authenticate middleware: ${err.message}`, err.stack);
-    res.status(err.statusCode || 401).json({
+  } catch (error) {
+    console.error(`Authentication error: ${error.message}`, error.stack);
+    res.status(error.statusCode || 401).json({
       error: {
-        message: err.message || 'Authentication failed',
-        status: err.statusCode || 401,
+        message: error.message || 'Invalid token',
+        status: error.statusCode || 401,
       },
     });
   }
 };
 
-export { authenticate };
+export const restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        error: {
+          message: 'You do not have permission to perform this action',
+          status: 403,
+        },
+      });
+    }
+    next();
+  };
+};

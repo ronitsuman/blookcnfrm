@@ -1339,7 +1339,10 @@
 
 
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+// 
+
+//part 3 
+import { useEffect, useState, useCallback } from 'react';
 import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setFilter, resetFilters } from '../redux/filterSlice';
@@ -1359,35 +1362,59 @@ const BrowseSpaces = () => {
 
   const filters = useSelector((state) => state.filters, shallowEqual);
 
-  const safeFilters = useMemo(() => ({
-    searchQuery: '',
-    city: '',
-    spaceType: '',
-    priceRange: '',
-    ...filters
-  }), [filters]);
+  const [appliedFilters, setAppliedFilters] = useState(filters);
 
-  const debouncedSearch = useCallback(
-    debounce((searchValue) => {
-      dispatch(setFilter({ searchQuery: searchValue }));
+  const handleSearchChange = useCallback(
+    debounce((value) => {
+      dispatch(setFilter({ searchQuery: value }));
     }, 500),
     [dispatch]
   );
 
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    dispatch(setFilter({ searchQuery: value }));
-    debouncedSearch(value);
-  };
-
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
+    console.log(`Filter changed: ${name}=${value}`);
     dispatch(setFilter({ [name]: value }));
   };
 
+  const handleApplyFilters = () => {
+    console.log('Applying filters:', filters);
+    setAppliedFilters({ ...filters });
+  };
+
+  const handleResetFilters = () => {
+    console.log('Resetting filters');
+    dispatch(resetFilters());
+    setAppliedFilters({
+      searchQuery: '',
+      city: '',
+      spaceType: '',
+      priceRange: '',
+      ageGroupMix: '',
+    });
+  };
+
   const handleSpaceClick = (spaceId) => {
-    console.log('Navigating to space with ID:', spaceId); // Debug log
-    navigate(`/spaces/${spaceId}`);
+    console.log('Navigating to space with ID:', spaceId);
+    if (spaceId) navigate(`/spaces/${spaceId}`);
+  };
+
+  const getFilterSummary = () => {
+    const activeFilters = [];
+    if (appliedFilters.searchQuery) activeFilters.push(`Search: ${appliedFilters.searchQuery}`);
+    if (appliedFilters.city) activeFilters.push(`City: ${appliedFilters.city}`);
+    if (appliedFilters.spaceType) activeFilters.push(`Type: ${appliedFilters.spaceType}`);
+    if (appliedFilters.priceRange) {
+      const ranges = {
+        low: '₹1K-5K',
+        medium: '₹5K-10K',
+        high: '₹10K-25K',
+        premium: '₹25K+',
+      };
+      activeFilters.push(`Price: ${ranges[appliedFilters.priceRange]}`);
+    }
+    if (appliedFilters.ageGroupMix) activeFilters.push(`Age Group: ${appliedFilters.ageGroupMix}`);
+    return activeFilters.length > 0 ? activeFilters.join(', ') : 'No filters applied';
   };
 
   useEffect(() => {
@@ -1395,12 +1422,11 @@ const BrowseSpaces = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         const params = new URLSearchParams();
-        Object.entries(safeFilters).forEach(([key, value]) => {
+        Object.entries(appliedFilters).forEach(([key, value]) => {
           if (value) {
             if (key === 'priceRange') {
-              // Map priceRange to minPrice and maxPrice
               if (value === 'low') {
                 params.append('minPrice', 1000);
                 params.append('maxPrice', 5000);
@@ -1414,7 +1440,6 @@ const BrowseSpaces = () => {
                 params.append('minPrice', 25000);
               }
             } else if (key === 'spaceType') {
-              // Map spaceType to type
               params.append('type', value);
             } else {
               params.append(key, value);
@@ -1422,28 +1447,51 @@ const BrowseSpaces = () => {
           }
         });
 
-        const res = await fetch(`http://localhost:5000/api/spaces/getallspaces?${params.toString()}`);
-        if (!res.ok) throw new Error('Failed to fetch spaces');
-        const data = await res.json();
-        console.log('Fetched spaces data:', data); // Debug log
-        const spacesData = data.data || [];
-        // Debug each space to ensure _id exists
-        spacesData.forEach(space => {
-          console.log('Space ID:', space._id, 'Name:', space.name);
+        console.log('Fetching spaces with params:', params.toString());
+
+        const apiUrl =  'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/spaces/getallspaces?${params.toString()}`, {
+          headers: {
+            'Accept': 'application/json',
+          },
         });
+
+        if (!response.ok) {
+          const text = await response.text();
+          console.error('Non-JSON response:', text);
+          throw new Error(`HTTP error ${response.status}: ${text.startsWith('<!') ? 'Received HTML instead of JSON' : text}`);
+        }
+
+        const data = await response.json();
+        console.log('Fetched spaces data:', data);
+
+        if (!data || !Array.isArray(data.data)) {
+          console.warn('Invalid API response structure:', data);
+          throw new Error('Invalid response structure from API');
+        }
+
+        const spacesData = data.data;
+        if (spacesData.length === 0) {
+          console.warn('No spaces returned from API');
+        }
+        spacesData.forEach((space, index) => {
+          if (!space._id) {
+            console.warn(`Space at index ${index} has no _id:`, space);
+          }
+        });
+
         setSpaces(spacesData);
       } catch (err) {
         console.error('Error fetching spaces:', err);
-        setError(err.message);
+        setError(err.message || 'Failed to load spaces');
         setSpaces([]);
       } finally {
         setLoading(false);
       }
     };
 
-    const timer = setTimeout(fetchSpaces, 300);
-    return () => clearTimeout(timer);
-  }, [safeFilters]);
+    fetchSpaces();
+  }, [appliedFilters]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -1463,69 +1511,90 @@ const BrowseSpaces = () => {
                   type="text"
                   name="searchQuery"
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4261FF] focus:border-[#4261FF] transition duration-150 ease-in-out sm:text-sm"
-                  placeholder="Search by location, type, or keywords..."
-                  value={safeFilters.searchQuery}
-                  onChange={handleSearchChange}
+                  placeholder="Search by name, address, or city..."
+                  value={filters.searchQuery}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    dispatch(setFilter({ searchQuery: value }));
+                    handleSearchChange(value);
+                  }}
                 />
               </div>
               
               {/* Filter Dropdowns */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {/* City/Area */}
                 <select
                   name="city"
                   className="p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#4261FF] focus:border-[#4261FF]"
-                  value={safeFilters.city}
+                  value={filters.city}
                   onChange={handleFilterChange}
                 >
-                  <option value="">City / Area</option>
-                  <option value="delhi">Delhi NCR</option>
-                  <option value="mumbai">Mumbai</option>
-                  <option value="bangalore">Bangalore</option>
-                  <option value="pune">Pune</option>
-                  <option value="chennai">Chennai</option>
+                  <option value="">Select City</option>
+                  <option value="Delhi">Delhi NCR</option>
+                  <option value="Mumbai">Mumbai</option>
+                  <option value="Bangalore">Bangalore</option>
+                  <option value="Pune">Pune</option>
+                  <option value="Chennai">Chennai</option>
                 </select>
 
                 {/* Space Type */}
                 <select
                   name="spaceType"
                   className="p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#4261FF] focus:border-[#4261FF]"
-                  value={safeFilters.spaceType}
+                  value={filters.spaceType}
                   onChange={handleFilterChange}
                 >
-                  <option value="">Space Type</option>
-                  <option value="retail">Retail</option>
-                  <option value="restaurant">Restaurant/Café</option>
-                  <option value="society">Residential Society</option>
-                  <option value="office">Office Space</option>
-                  <option value="clinic">Clinic/Hospital</option>
+                  <option value="">Select Type</option>
+                  <option value="RWA">RWA</option>
+                  <option value="Mall">Mall</option>
+                  <option value="Retail">Retail</option>
+                  <option value="Cafe">Cafe</option>
+                  <option value="store">Store</option>
                   <option value="salon">Salon</option>
+                  <option value="gym">Gym</option>
+                  <option value="other">Other</option>
                 </select>
 
                 {/* Price Range */}
                 <select
                   name="priceRange"
                   className="p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#4261FF] focus:border-[#4261FF]"
-                  value={safeFilters.priceRange}
+                  value={filters.priceRange}
                   onChange={handleFilterChange}
                 >
-                  <option value="">Price Range</option>
+                  <option value="">Select Price Range</option>
                   <option value="low">₹1K-5K / month</option>
                   <option value="medium">₹5K-10K / month</option>
                   <option value="high">₹10K-25K / month</option>
                   <option value="premium">₹25K+ / month</option>
+                </select>
+
+                {/* Age Group Mix */}
+                <select
+                  name="ageGroupMix"
+                  className="p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#4261FF] focus:border-[#4261FF]"
+                  value={filters.ageGroupMix}
+                  onChange={handleFilterChange}
+                >
+                  <option value="">Select Age Group</option>
+                  <option value="Young adults">Young Adults</option>
+                  <option value="Families">Families</option>
+                  <option value="Seniors">Seniors</option>
+                  <option value="Mixed">Mixed</option>
                 </select>
               </div>
 
               <div className="flex gap-2">
                 <Button 
                   className="bg-[#4261FF] hover:bg-[#6D4EFF]"
+                  onClick={handleApplyFilters}
                 >
                   Apply Filters
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => dispatch(resetFilters())}
+                  onClick={handleResetFilters}
                 >
                   Reset
                 </Button>
@@ -1539,8 +1608,9 @@ const BrowseSpaces = () => {
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold text-black">
-                Available Spaces ({spaces.length})
+                {appliedFilters.city ? `Spaces in ${appliedFilters.city}` : 'Available Spaces'} ({spaces.length})
               </h2>
+              <p className="text-sm text-gray-600">Filters: {getFilterSummary()}</p>
             </div>
 
             {error ? (
@@ -1560,35 +1630,43 @@ const BrowseSpaces = () => {
             ) : spaces.length === 0 ? (
               <div className="text-center py-12">
                 <Search className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-lg font-medium text-gray-900">No spaces found</h3>
+                <h3 className="mt-2 text-lg font-medium text-gray-900">No Spaces Found</h3>
                 <p className="mt-1 text-gray-500">
-                  {Object.values(safeFilters).some(Boolean) 
-                    ? "Try adjusting your filters"
+                  {Object.values(appliedFilters).some(Boolean) 
+                    ? `No spaces match your filters: ${getFilterSummary()}`
                     : "No spaces available at the moment"}
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {spaces.map((space) => (
-                  <div 
-                    key={space._id || `space-${Math.random()}`} // Fallback key if _id is undefined
-                    onClick={() => handleSpaceClick(space._id)}
-                    className="cursor-pointer"
-                  >
-                    <SpaceCard 
-                      space={{
-                        ...space,
-                        photos: space.photos || [],
-                        location: space.location || {}
-                      }} 
-                    />
-                    {space.listingType === 'premium' && (
-                      <div className="absolute top-2 left-2 bg-yellow-400 text-black px-2 py-1 rounded-md flex items-center text-xs font-bold z-10">
-                        <Star size={12} className="mr-1 fill-black" />
-                        PREMIUM
-                      </div>
-                    )}
-                  </div>
+                {spaces.map((space, index) => (
+                  space && space._id ? (
+                    <div 
+                      key={space._id}
+                      onClick={() => handleSpaceClick(space._id)}
+                      className="cursor-pointer relative"
+                    >
+                      <SpaceCard 
+                        space={{
+                          ...space,
+                          photos: Array.isArray(space.photos) ? space.photos : [],
+                          ageGroupMix: space.ageGroupMix || 'N/A',
+                          weekdayFootfall: space.weekdayFootfall || 'N/A',
+                          weekendFootfall: space.weekendFootfall || 'N/A',
+                        }} 
+                      />
+                      {space.listingType === 'premium' && (
+                        <div className="absolute top-2 left-2 bg-yellow-400 text-black px-2 py-1 rounded-md flex items-center text-xs font-bold z-10">
+                          <Star size={12} className="mr-1 fill-black" />
+                          PREMIUM
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div key={`invalid-${index}`} className="text-red-500">
+                      Invalid space data at index {index}
+                    </div>
+                  )
                 ))}
               </div>
             )}

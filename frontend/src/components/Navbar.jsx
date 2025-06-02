@@ -56,7 +56,7 @@ const Navbar = () => {
         return [
           { href: '/spaceowner-dashboard', label: 'Space-Owner Dashboard', icon: <LayoutDashboard size={16} className="mr-1" /> },
         ];
-      case 'BlookForceAgent':
+      case 'blookforce_agent':
         return [
           { href: '/blookforceagent-dashboard', label: 'Blookforce-Agent Dashboard', icon: <LayoutDashboard size={16} className="mr-1" /> },
         ];

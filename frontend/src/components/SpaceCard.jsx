@@ -189,79 +189,109 @@
 
 // export default SpaceCard;
 
-// frontend/src/components/SpaceCard.jsx
-import { Star, MapPin } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+// // frontend/src/components/SpaceCard.jsx
+// import { Star, MapPin } from 'lucide-react';
+// import { useNavigate } from 'react-router-dom';
+
+// const SpaceCard = ({ space }) => {
+//   const navigate = useNavigate();
+
+//   const handleClick = () => {
+//     navigate(`/spaces/${space._id}`);
+//   };
+
+//   return (
+//     <div 
+//       className="relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer h-full"
+//       onClick={handleClick}
+//     >
+//       {space.listingType === 'premium' && (
+//         <div className="absolute top-2 left-2 bg-yellow-400 text-black px-2 py-1 rounded-md flex items-center text-xs font-bold z-10">
+//           <Star size={12} className="mr-1 fill-black" />
+//           PREMIUM
+//         </div>
+//       )}
+
+//       <div className="h-48 overflow-hidden">
+//         <img 
+//           src={space.photos && space.photos.length > 0 ? space.photos[0] : '/placeholder-space.jpg'} 
+//           alt={space.name}
+//           className="w-full h-full object-cover"
+//           onError={(e) => {
+//             e.target.src = '/placeholder-space.jpg';
+//           }}
+//         />
+//       </div>
+
+//       <div className="p-4">
+//         <h3 className="font-bold text-lg mb-1">{space.name}</h3>
+//         <div className="flex items-center text-gray-600 mb-2">
+//           <MapPin size={16} className="mr-1" />
+//           <span>{space.address}, {space.city}, {space.pincode}</span>
+//         </div>
+        
+//         <div className="grid grid-cols-2 gap-2 mb-2 text-sm text-gray-600">
+//           <div>
+//             <span className="font-medium">Type:</span> {space.type}
+//           </div>
+//           <div>
+//             <span className="font-medium">Price:</span> ₹{space.price?.toLocaleString() || 'N/A'}
+//           </div>
+//           {space.weekdayFootfall && (
+//             <div>
+//               <span className="font-medium">Weekday Footfall:</span> {space.weekdayFootfall}
+//             </div>
+//           )}
+//           {space.weekendFootfall && (
+//             <div>
+//               <span className="font-medium">Weekend Footfall:</span> {space.weekendFootfall}
+//             </div>
+//           )}
+//         </div>
+
+//         <div className="flex flex-wrap gap-2 text-xs text-blue-800">
+//           {space.hasCCTV === 'yes' && (
+//             <span className="bg-blue-100 px-2 py-1 rounded-full">CCTV</span>
+//           )}
+//           {space.heatMapping === 'yes' && (
+//             <span className="bg-blue-100 px-2 py-1 rounded-full">Heat Mapping</span>
+//           )}
+//           {space.brandingAreaSize && (
+//             <span className="bg-blue-100 px-2 py-1 rounded-full">
+//               {space.brandingAreaSize} Branding Area
+//             </span>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default SpaceCard;
+
+//part 3 final 
+import React from 'react';
+import { MapPin } from 'lucide-react';
 
 const SpaceCard = ({ space }) => {
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    navigate(`/spaces/${space._id}`);
-  };
-
   return (
-    <div 
-      className="relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer h-full"
-      onClick={handleClick}
-    >
-      {space.listingType === 'premium' && (
-        <div className="absolute top-2 left-2 bg-yellow-400 text-black px-2 py-1 rounded-md flex items-center text-xs font-bold z-10">
-          <Star size={12} className="mr-1 fill-black" />
-          PREMIUM
-        </div>
-      )}
-
-      <div className="h-48 overflow-hidden">
-        <img 
-          src={space.photos && space.photos.length > 0 ? space.photos[0] : '/placeholder-space.jpg'} 
-          alt={space.name}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            e.target.src = '/placeholder-space.jpg';
-          }}
-        />
-      </div>
-
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
+      <img
+        src={space.photos[0] || 'https://via.placeholder.com/300x200'}
+        alt={space.name || 'Space'}
+        className="w-full h-48 object-cover"
+      />
       <div className="p-4">
-        <h3 className="font-bold text-lg mb-1">{space.name}</h3>
-        <div className="flex items-center text-gray-600 mb-2">
-          <MapPin size={16} className="mr-1" />
-          <span>{space.address}, {space.city}, {space.pincode}</span>
+        <h3 className="text-lg font-semibold text-gray-900">{space.name || 'Untitled Space'}</h3>
+        <div className="flex items-center text-sm text-gray-500 mt-1">
+          <MapPin className="h-4 w-4 mr-1" />
+          {space.city || 'N/A'}
         </div>
-        
-        <div className="grid grid-cols-2 gap-2 mb-2 text-sm text-gray-600">
-          <div>
-            <span className="font-medium">Type:</span> {space.type}
-          </div>
-          <div>
-            <span className="font-medium">Price:</span> ₹{space.price?.toLocaleString() || 'N/A'}
-          </div>
-          {space.weekdayFootfall && (
-            <div>
-              <span className="font-medium">Weekday Footfall:</span> {space.weekdayFootfall}
-            </div>
-          )}
-          {space.weekendFootfall && (
-            <div>
-              <span className="font-medium">Weekend Footfall:</span> {space.weekendFootfall}
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2 text-xs text-blue-800">
-          {space.hasCCTV === 'yes' && (
-            <span className="bg-blue-100 px-2 py-1 rounded-full">CCTV</span>
-          )}
-          {space.heatMapping === 'yes' && (
-            <span className="bg-blue-100 px-2 py-1 rounded-full">Heat Mapping</span>
-          )}
-          {space.brandingAreaSize && (
-            <span className="bg-blue-100 px-2 py-1 rounded-full">
-              {space.brandingAreaSize} Branding Area
-            </span>
-          )}
-        </div>
+        <p className="text-sm text-gray-600 mt-1">Type: {space.type || 'N/A'}</p>
+        <p className="text-sm text-gray-600 mt-1">Price: ₹{space.price || 0}/month</p>
+        <p className="text-sm text-gray-600 mt-1">Age Group: {space.ageGroupMix}</p>
+        <p className="text-sm text-gray-600 mt-1">Weekday Footfall: {space.weekdayFootfall}</p>
+        <p className="text-sm text-gray-600 mt-1">Weekend Footfall: {space.weekendFootfall}</p>
       </div>
     </div>
   );

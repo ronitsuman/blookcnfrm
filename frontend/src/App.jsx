@@ -27,6 +27,7 @@ import BlookWorks from './pages/BlookWorks';
 import BrowseSpaces from './pages/BrowseSpaces';
 
 import SpaceDetails from './pages/SpaceDetail';
+import TelecallerDashboard from './Dashboard/TelecallerDashboard';
 
 const App = () => {
   return (
@@ -88,8 +89,16 @@ const App = () => {
         <Route
           path="/blookforceagent-dashboard"
           element={
-            <ProtectedRoute allowedRoles={['BlookForceAgent']}>
+            <ProtectedRoute allowedRoles={['blookforce_agent']}>
               <BlookforceAgent/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/telecaller"
+          element={
+            <ProtectedRoute allowedRoles={['telecaller']}>
+              <TelecallerDashboard/>
             </ProtectedRoute>
           }
         />

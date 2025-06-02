@@ -5,6 +5,7 @@ import AdminDashboard from '../Dashboard/AdminDashbboard';
 import VendorDashboard from '../Dashboard/VendorDashboard';
 import BlookforceAgent from '../Dashboard/BlookforceAgent';
 import SpaceownerDashboard from '../Dashboard/SpaceownerDashboard';
+import TelecallerDashboard from '../Dashboard/TelecallerDashboard';
 
 
 const Dashboard = () => {
@@ -24,10 +25,11 @@ const Dashboard = () => {
       <AdminDashboard/>}
       
        {/* <h2>Hello, {user.name}</h2> */}
-      {user.role === 'Vendor' && <VendorDashboard/>}
-      {user.role === 'BlookForceAgent' && <BlookforceAgent/>}
+      {user.role === 'vendor' && <VendorDashboard/>}
+      {user.role === 'blookforce_agent' && <BlookforceAgent/>}
       {user.role === 'brand' && <BrandDashboard/> }
       {user.role === 'space_owner' && <SpaceownerDashboard/>}
+      {user.role === 'telecaller' && <TelecallerDashboard/>}
     </>
   );
 };
