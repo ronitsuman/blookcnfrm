@@ -2118,7 +2118,7 @@ import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps
 const Registration = () => {
   const apikey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   const { user } = useSelector((state) => state.user);
   const navigate = useNavigate();
@@ -2141,7 +2141,6 @@ const Registration = () => {
       accountHolderName: '',
     },
   });
-
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -2177,6 +2176,7 @@ const Registration = () => {
       accountHolderName: '',
     },
     ageGroupMix: '',
+    availabilities: [], // For initial availability slots
   });
 
   useEffect(() => {
@@ -2368,24 +2368,28 @@ const Registration = () => {
     setMarkerPosition(null);
   };
 
-  const handleAccountUpdateSubmit = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error('Authentication token missing.');
-      return;
-    }
+  const handleAddAvailability = () => {
+    setFormData(prev => ({
+      ...prev,
+      availabilities: [...prev.availabilities, { startDate: '', endDate: '', price: '' }],
+    }));
+  };
 
-    try {
-      await axios.put(`${apiUrl}/spaces/update-account`, accountFormData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      toast.success('Bank details updated successfully!');
-      setShowAccountUpdate(false);
-    } catch (error) {
-      const errorMessage = error.response?.data?.error?.message || 'Failed to update bank details.';
-      toast.error(errorMessage);
-    }
+  const handleAvailabilityChange = (index, e) => {
+    const { name, value } = e.target;
+    setFormData(prev => {
+      const updatedAvailabilities = [...prev.availabilities];
+      updatedAvailabilities[index] = { ...updatedAvailabilities[index], [name]: value };
+      return { ...prev, availabilities: updatedAvailabilities };
+    });
+  };
+
+  const handleRemoveAvailability = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      availabilities: prev.availabilities.filter((_, i) => i !== index),
+    }));
+    toast.info('Availability slot removed');
   };
 
   const handleSubmit = async (e) => {
@@ -2447,6 +2451,7 @@ const Registration = () => {
         agentId: formData.agentId || undefined,
         bankDetails: spaceCount === 0 ? formData.bankDetails : undefined,
         ageGroupMix: formData.ageGroupMix || undefined,
+        availabilities: formData.availabilities.filter(avail => avail.startDate && avail.endDate),
       };
 
       const response = await axios.post(`${apiUrl}/spaces`, spaceData, {
@@ -2492,6 +2497,7 @@ const Registration = () => {
             accountHolderName: '',
           },
           ageGroupMix: '',
+          availabilities: [],
         });
       }
     } catch (error) {
@@ -2502,11 +2508,24 @@ const Registration = () => {
     }
   };
 
-  const handlePayNow = () => navigate('/payment');
-  const handleClosePopup = () => {
-    setShowPopup(false);
-    if (spaceCount === 0) setShowAccountUpdate(true);
-    else navigate('/dashboard');
+  const handleAccountUpdateSubmit = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Authentication token missing.');
+      return;
+    }
+
+    try {
+      await axios.put(`${apiUrl}/spaces/update-account`, accountFormData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success('Bank details updated successfully!');
+      setShowAccountUpdate(false);
+    } catch (error) {
+      const errorMessage = error.response?.data?.error?.message || 'Failed to update bank details.';
+      toast.error(errorMessage);
+    }
   };
 
   const isFormValid = () => (
@@ -2582,6 +2601,63 @@ const Registration = () => {
           ))}
         </div>
       )}
+    </div>
+  );
+
+  const renderAvailabilityForm = () => (
+    <div className="mt-6">
+      <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Initial Availability (Optional)</h3>
+      {formData.availabilities.map((avail, index) => (
+        <div key={index} className="mb-4 p-4 bg-gray-100 rounded-md">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date & Time</label>
+              <input
+                type="datetime-local"
+                name="startDate"
+                value={avail.startDate}
+                onChange={(e) => handleAvailabilityChange(index, e)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">End Date & Time</label>
+              <input
+                type="datetime-local"
+                name="endDate"
+                value={avail.endDate}
+                onChange={(e) => handleAvailabilityChange(index, e)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price (Optional)</label>
+              <input
+                type="number"
+                name="price"
+                value={avail.price}
+                onChange={(e) => handleAvailabilityChange(index, e)}
+                placeholder="Price per slot"
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <Button
+            type="button"
+            onClick={() => handleRemoveAvailability(index)}
+            className="mt-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+          >
+            Remove
+          </Button>
+        </div>
+      ))}
+      <Button
+        type="button"
+        onClick={handleAddAvailability}
+        className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+      >
+        Add Availability Slot
+      </Button>
     </div>
   );
 
@@ -2667,14 +2743,18 @@ const Registration = () => {
               <div className="flex justify-center">
                 {listingType === 'premium' ? (
                   <Button
-                    onClick={handlePayNow}
+                    onClick={() => navigate('/payment')}
                     className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
                   >
                     Pay Now
                   </Button>
                 ) : (
                   <Button
-                    onClick={handleClosePopup}
+                    onClick={() => {
+                      setShowPopup(false);
+                      if (spaceCount === 0) setShowAccountUpdate(true);
+                      else navigate('/dashboard');
+                    }}
                     className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
                   >
                     Close
@@ -3201,6 +3281,8 @@ const Registration = () => {
                           placeholder="e.g., Weekends only"
                         />
                       </div>
+
+                      {renderAvailabilityForm()}
                     </div>
 
                     <div className="pt-4">

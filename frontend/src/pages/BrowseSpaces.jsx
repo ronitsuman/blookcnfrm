@@ -1347,21 +1347,24 @@ import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setFilter, resetFilters } from '../redux/filterSlice';
 import { Button } from '../components/ui/Button';
-import { Search, MapPin, Star } from 'lucide-react';
+import { Search, MapPin, Star, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SpaceCard from '../components/SpaceCard';
 import { debounce } from 'lodash';
+import { toast } from 'react-toastify';
 
 const BrowseSpaces = () => {
   const [spaces, setSpaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [selectedSpaceId, setSelectedSpaceId] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const { user } = useSelector((state) => state.user, shallowEqual);
   const filters = useSelector((state) => state.filters, shallowEqual);
-
   const [appliedFilters, setAppliedFilters] = useState(filters);
 
   const handleSearchChange = useCallback(
@@ -1395,8 +1398,24 @@ const BrowseSpaces = () => {
   };
 
   const handleSpaceClick = (spaceId) => {
-    console.log('Navigating to space with ID:', spaceId);
-    if (spaceId) navigate(`/spaces/${spaceId}`);
+    console.log('Space clicked with ID:', spaceId);
+    if (!user) {
+      setSelectedSpaceId(spaceId);
+      setShowLoginModal(true);
+      toast.error('Login first to view space details');
+    } else if (spaceId) {
+      navigate(`/spaces/${spaceId}`);
+    }
+  };
+
+  const handleLoginRedirect = () => {
+    setShowLoginModal(false);
+    navigate('/login');
+  };
+
+  const handleCloseModal = () => {
+    setShowLoginModal(false);
+    setSelectedSpaceId(null);
   };
 
   const getFilterSummary = () => {
@@ -1449,7 +1468,7 @@ const BrowseSpaces = () => {
 
         console.log('Fetching spaces with params:', params.toString());
 
-        const apiUrl =  'http://localhost:5000/api';
+        const apiUrl = 'http://localhost:5000/api';
         const response = await fetch(`${apiUrl}/spaces/getallspaces?${params.toString()}`, {
           headers: {
             'Accept': 'application/json',
@@ -1497,6 +1516,32 @@ const BrowseSpaces = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Login Required</h2>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6 text-center">Please login first to view space details.</p>
+            <div className="flex justify-center">
+              <Button
+                onClick={handleLoginRedirect}
+                className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+              >
+                Login
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="flex-grow">
         {/* Filter Section */}
         <section className="py-8 bg-white border-b text-black">

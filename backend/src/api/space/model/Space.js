@@ -303,6 +303,12 @@ const SpaceSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  availability: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Availability',
+    },
+  ],
 }, {
   timestamps: true,
 });

@@ -11,6 +11,7 @@ import spaceRoutes from './api/space/routes/spaceRoutes.js';
 import Analytics from './api/Analytics/model/Analytics.js';
 import analyticsRoutes from './api/Analytics/router/analyticsRoute.js';
 import campaignRoutes from './api/campaign/router/campaignRoute.js';
+import availablityRoutes from './api/calender/router/availablityrouter.js'
 
 loadEnv();
 
@@ -33,8 +34,7 @@ app.use(fileUpload());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/spaces',spaceRoutes)
-app.use('/api/analytics', analyticsRoutes)
-app.use('/api/campaigns', campaignRoutes)
+app.use('/api/availabilities', availablityRoutes)
 
 
 // Health check

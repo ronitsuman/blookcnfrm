@@ -3663,7 +3663,7 @@ const Login = () => {
         vendor: '/dashboard/vendor',
         telecaller: '/dashboard/telecaller',
         admin: '/dashboard/admin',
-        telecaller:' /dashboard/telecaller',
+        
       };
       const route = roleDashboard[user.role];
       if (route) navigate(route);

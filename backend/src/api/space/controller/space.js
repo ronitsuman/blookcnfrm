@@ -1539,6 +1539,7 @@
 
 import Space from '../model/Space.js';
 import User from '../../user/models/User.js';
+import Availability from '../../calender/model/availablitymodel.js';
 import { uploadImageBase64 } from '../../../integrations/cloudinary/cloudinary.config.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError } from '../../../common/error/index.js';
 
@@ -1550,7 +1551,7 @@ const createSpace = async (req, res) => {
       name, type, managerName, phone, email, address, city, pincode, landmark,
       location, weekdayFootfall, weekendFootfall, brandingAreaSize, hasCCTV,
       cameraCount, cameraAligned, complianceDetails, heatMapping, listingType,
-      preferredTiming, photos, price, agentId, bankDetails, ageGroupMix,
+      preferredTiming, photos, price, agentId, bankDetails, ageGroupMix, availabilities,
     } = req.body;
     const userId = req.user?.id;
 
@@ -1599,7 +1600,7 @@ const createSpace = async (req, res) => {
     const filteredPhotos = uploadedPhotos.filter(url => url);
     if (filteredPhotos.length === 0) throw new BadRequestError('At least one valid photo is required');
 
-    const space = await Space.create({
+    const space = new Space({
       owner: userId,
       name,
       type,
@@ -1628,8 +1629,25 @@ const createSpace = async (req, res) => {
       price: Number(price),
       agentId,
       ageGroupMix,
-      status: 'pending',
+      availability: [],
     });
+
+    // Save initial availabilities
+    if (availabilities && Array.isArray(availabilities) && availabilities.length > 0) {
+      for (const avail of availabilities) {
+        if (avail.startDate && avail.endDate) {
+          const availability = await Availability.create({
+            spaceId: space._id,
+            startDate: new Date(avail.startDate),
+            endDate: new Date(avail.endDate),
+            price: avail.price ? Number(avail.price) : undefined,
+          });
+          space.availability.push(availability._id);
+        }
+      }
+    }
+
+    await space.save();
 
     if (!user.spaces) user.spaces = [];
     user.spaces.push(space._id);
@@ -1713,7 +1731,7 @@ const getAllSpaces = async (req, res) => {
       ];
     }
 
-    if (city) query.city = { $regex: city, $options: 'i' }; // Case-insensitive
+    if (city) query.city = { $regex: city, $options: 'i' };
     if (type) {
       const types = type.split(',').map(t => t.trim()).filter(t => t);
       if (types.length > 0) query.type = { $in: types };
@@ -1736,7 +1754,8 @@ const getAllSpaces = async (req, res) => {
 
     const spaces = await Space.find(query)
       .populate('owner', 'name email')
-      .select('name type city price photos listingType ageGroupMix weekdayFootfall weekendFootfall')
+      .populate('availability')
+      .select('name type city price photos listingType ageGroupMix weekdayFootfall weekendFootfall availability')
       .lean();
 
     console.log('Fetched spaces:', spaces.length, spaces);
@@ -1764,7 +1783,9 @@ const getSpace = async (req, res) => {
     const { spaceId } = req.params;
     if (!spaceId.match(/^[0-9a-fA-F]{24}$/)) throw new BadRequestError('Invalid space ID');
 
-    const space = await Space.findById(spaceId).populate('owner', 'name email');
+    const space = await Space.findById(spaceId)
+      .populate('owner', 'name email')
+      .populate('availability');
     if (!space) throw new BadRequestError('Space not found');
 
     res.status(200).json({
@@ -1797,7 +1818,7 @@ const getPendingSpaces = async (req, res) => {
       .populate('owner', 'email name')
       .skip(skip)
       .limit(limit)
-      .select('_id name type managerName phone address city pincode price listingType photos status ageGroupMix');
+      .select('_id name type managerName phone address city pincode price listingType photos status ageGroupMix availability');
 
     const total = await Space.countDocuments({ status: 'pending' });
 
