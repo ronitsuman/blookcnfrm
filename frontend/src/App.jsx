@@ -141,6 +141,7 @@ import BrowseSpaces from './pages/BrowseSpaces';
 import SpaceDetails from './pages/SpaceDetail';
 import AvailabilityCalendar from './pages/AvailabilityCalendar';
 import TelecallerDashboard from './Dashboard/TelecallerDashboard';
+import OwnerBookings from './components/OwnerBooking';
 
 const App = () => {
   return (
@@ -187,6 +188,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/vendor-dashboard"
           element={

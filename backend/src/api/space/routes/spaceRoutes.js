@@ -25,7 +25,7 @@
 
 //part 2 final
 import express from 'express';
-import { createSpace, updateUserAccount, getAllSpaces, getSpace, getPendingSpaces, manageSpaceStatus } from '../controller/space.js';
+import { createSpace, updateUserAccount, getAllSpaces, getSpace, getPendingSpaces, manageSpaceStatus, getOwnerSpaces } from '../controller/space.js';
 import { authenticate, restrictTo } from '../../../shared/middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -39,6 +39,7 @@ router.use((req, res, next) => {
 router.post('/', authenticate, restrictTo('space_owner'), createSpace);
 router.put('/update-account', authenticate, restrictTo('space_owner'), updateUserAccount);
 router.get('/getallspaces', getAllSpaces);
+router.get('/owner', authenticate, restrictTo('space_owner'), getOwnerSpaces);
 router.get('/pending', authenticate, restrictTo('admin'), getPendingSpaces);
 router.get('/:spaceId', getSpace);
 router.patch('/manage-status', authenticate, restrictTo('admin'), manageSpaceStatus);

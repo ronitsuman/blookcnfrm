@@ -1868,5 +1868,37 @@ const manageSpaceStatus = async (req, res) => {
     });
   }
 };
+const getOwnerSpaces = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    console.log('Fetching spaces for user:', userId); // Debug
 
-export { createSpace, updateUserAccount, getAllSpaces, getSpace, getPendingSpaces, manageSpaceStatus };
+    if (!userId) throw new UnauthorizedError('User not authenticated');
+
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'space_owner') {
+      throw new ForbiddenError('Only space owners can view their spaces');
+    }
+
+    const spaces = await Space.find({ owner: userId })
+      .select('name type city price photos listingType ageGroupMix weekdayFootfall weekendFootfall status')
+      .lean();
+
+    console.log('Fetched owner spaces:', spaces); // Debug
+
+    res.status(200).json({
+      status: 'success',
+      data: spaces,
+    });
+  } catch (err) {
+    console.error(`Error in getOwnerSpaces: ${err.message}`, err.stack);
+    res.status(err.statusCode || 500).json({
+      error: {
+        message: err.message || 'Internal server error',
+        status: err.statusCode || 500,
+      },
+    });
+  }
+};
+
+export { createSpace, updateUserAccount, getAllSpaces, getSpace, getPendingSpaces, manageSpaceStatus ,getOwnerSpaces};

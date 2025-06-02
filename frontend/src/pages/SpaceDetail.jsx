@@ -636,6 +636,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Button } from '../components/ui/Button';
+import BookingForm from '../components/BookingForm';
 
 const SpaceDetails = () => {
   const { id } = useParams();
@@ -648,17 +649,12 @@ const SpaceDetails = () => {
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [bookingForm, setBookingForm] = useState({
-    startDate: '',
-    endDate: '',
-  });
 
   const apikey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const apiUrl =  'http://localhost:5000/api';
 
   useEffect(() => {
-    // Check if user is logged in
     if (!user) {
       toast.error('Login to view the details');
       navigate('/login');
@@ -769,32 +765,6 @@ const SpaceDetails = () => {
     setIsFullScreen(false);
   };
 
-  const handleBookingInputChange = (e) => {
-    const { name, value } = e.target;
-    setBookingForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleBookingSubmit = (e) => {
-    e.preventDefault();
-    if (!bookingForm.startDate || !bookingForm.endDate) {
-      toast.error('Please select start and end dates');
-      return;
-    }
-
-    const start = new Date(bookingForm.startDate);
-    const end = new Date(bookingForm.endDate);
-    if (end <= start) {
-      toast.error('End date must be after start date');
-      return;
-    }
-
-    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    const estimatedPrice = days * (space.price || 0);
-    toast.info(`Booking request for ${days} days. Estimated price: ₹${estimatedPrice}. Proceeding to payment...`);
-    // TODO: Integrate payment gateway (Task 5)
-    // navigate('/payment', { state: { spaceId: id, startDate, endDate, estimatedPrice } });
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -839,7 +809,6 @@ const SpaceDetails = () => {
         )}
 
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* Image Gallery */}
           <div className="relative h-96 bg-gray-200">
             {space.photos && space.photos.length > 0 ? (
               <>
@@ -872,7 +841,6 @@ const SpaceDetails = () => {
             )}
           </div>
 
-          {/* Full-Screen Modal */}
           {isFullScreen && space.photos && space.photos.length > 0 && (
             <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
               <button
@@ -1021,41 +989,7 @@ const SpaceDetails = () => {
                   )}
                 </div>
 
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">Book This Space</h3>
-                  <form onSubmit={handleBookingSubmit} className="bg-gray-50 p-4 rounded-lg space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Date & Time</label>
-                        <input
-                          type="datetime-local"
-                          name="startDate"
-                          value={bookingForm.startDate}
-                          onChange={handleBookingInputChange}
-                          required
-                          className="w-full p-2 border border-gray-300 rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">End Date & Time</label>
-                        <input
-                          type="datetime-local"
-                          name="endDate"
-                          value={bookingForm.endDate}
-                          onChange={handleBookingInputChange}
-                          required
-                          className="w-full p-2 border border-gray-300 rounded-md"
-                        />
-                      </div>
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full bg-[#4261FF] hover:bg-[#6D4EFF] text-white"
-                    >
-                      Proceed to Payment
-                    </Button>
-                  </form>
-                </div>
+                <BookingForm spaceId={space._id} spacePrice={space.price} />
               </div>
 
               <div>

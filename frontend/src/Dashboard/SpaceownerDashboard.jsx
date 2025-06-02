@@ -1,190 +1,207 @@
-// frontend/src/pages/SpaceOwnerDashboard.jsx
+// import { useState, useEffect } from 'react';
+// import { useSelector } from 'react-redux';
+// import { useNavigate } from 'react-router-dom';
+// import axios from 'axios';
+// import { toast, ToastContainer } from 'react-toastify';
+// import 'react-toastify/dist/ReactToastify.css';
+// import Navbar from '../components/Navbar';
+// import Footer from '../components/Footer';
+// import OwnerBookings from '../components/OwnerBooking';
+
+// const SpaceownerDashboard = () => {
+//   const { user } = useSelector((state) => state.user);
+//   const navigate = useNavigate();
+//   const [spaces, setSpaces] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const apiUrl =  'http://localhost:5000/api' ;
+
+//   useEffect(() => {
+//     if (!user || user.role !== 'space_owner') {
+//       toast.error('Please login as a space owner');
+//       navigate('/login');
+//       return;
+//     }
+
+//     const fetchSpaces = async () => {
+//       try {
+//         setLoading(true);
+//         setError(null);
+
+//         const response = await axios.get(`${apiUrl}/spaces`, {
+//           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+//         });
+
+//         setSpaces(response.data.data || []);
+//       } catch (err) {
+//         console.error('Error fetching spaces:', err);
+//         setError(err.response?.data?.error?.message || 'Failed to load spaces');
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchSpaces();
+//   }, [user, navigate]);
+
+//   if (loading) {
+//     return (
+//       <div className="min-h-screen flex items-center justify-center">
+//         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+//       </div>
+//     );
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="min-h-screen flex items-center justify-center">
+//         <p className="text-lg text-red-600">{error}</p>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="min-h-screen flex flex-col bg-gray-50">
+//       <Navbar />
+//       <main className="flex-grow container mx-auto px-4 py-8">
+//         <h1 className="text-3xl font-bold mb-6 text-black">Space Owner Dashboard</h1>
+
+//         <h2 className="text-2xl font-semibold mb-4">Your Spaces</h2>
+//         {spaces.length === 0 ? (
+//           <p className="text-gray-500">No spaces found. Add a space to get started.</p>
+//         ) : (
+//           <div className="space-y-8">
+//             {spaces.map((space) => (
+//               <div key={space._id} className="bg-white rounded-lg shadow-md p-6">
+//                 <h3 className="text-xl font-semibold mb-2">{space.name}</h3>
+//                 <p className="text-gray-600 mb-4">{space.city}, {space.type}</p>
+//                 <OwnerBookings spaceId={space._id} />
+//               </div>
+//             ))}
+//           </div>
+//         )}
+//       </main>
+//       <Footer />
+//       <ToastContainer position="bottom-right" autoClose={3000} />
+//     </div>
+//   );
+// };
+
+// export default SpaceownerDashboard;
+
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Navbar from '../components/Navbar';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { api } from '../../utils/api';
-import { MapPin, Star } from 'lucide-react';
+import Footer from '../components/Footer';
+import OwnerBookings from '../components/OwnerBooking'; // Corrected import
 
-export default function SpaceOwnerDashboard() {
-  const [spaces, setSpaces] = useState([]);
-  const [analytics, setAnalytics] = useState([]);
-  const [loading, setLoading] = useState(true);
-
+const SpaceownerDashboard = () => {
   const { user } = useSelector((state) => state.user);
-  const token = localStorage.getItem('token') || (user && user.token);
+  const navigate = useNavigate();
+  const [spaces, setSpaces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const apiUrl =  'http://localhost:5000/api';
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!token) {
-        toast.error('No authentication token found. Please log in again.');
-        setLoading(false);
-        return;
-      }
+    console.log('User state:', user); // Debug: Check user state
+    if (!user) {
+      toast.error('Please login to access dashboard');
+      navigate('/login');
+      return;
+    }
+    if (user.role !== 'space_owner') {
+      toast.error('Access restricted to space owners');
+      navigate('/');
+      return;
+    }
 
+    const fetchSpaces = async () => {
       try {
-        const [spacesRes, analyticsRes] = await Promise.all([
-          api.get('http://localhost:5000/api/spaces/getallspaces', { headers: { Authorization: `Bearer ${token}` } }),
-          api.get('http://localhost:5000/api/analytics/space', { headers: { Authorization: `Bearer ${token}` } }),
-        ]);
+        setLoading(true);
+        setError(null);
 
-        console.log('Spaces Response:', spacesRes.data);
-        console.log('Analytics Response:', analyticsRes.data);
+        const token = localStorage.getItem('token');
+        console.log('Token:', token); // Debug: Check token
+        if (!token) throw new Error('No authentication token found');
 
-        // Check if response is HTML (indicating an error)
-        if (typeof spacesRes.data === 'string' && spacesRes.data.includes('<!doctype html')) {
-          throw new Error('Invalid response from /spaces/getallspaces: Received HTML instead of JSON');
+        const response = await axios.get(`${apiUrl}/spaces/owner`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        console.log('Fetch spaces response:', response.data); // Debug: Check response
+        const spaces = response.data.data || [];
+        setSpaces(spaces);
+
+        if (spaces.length === 0) {
+          toast.info('No spaces found. Add a space to get started.');
         }
-        if (typeof analyticsRes.data === 'string' && analyticsRes.data.includes('<!doctype html')) {
-          throw new Error('Invalid response from /analytics/space: Received HTML instead of JSON');
-        }
-
-        const spacesData = Array.isArray(spacesRes.data)
-          ? spacesRes.data
-          : Array.isArray(spacesRes.data.data)
-          ? spacesRes.data.data
-          : [];
-
-        const analyticsData = Array.isArray(analyticsRes.data)
-          ? analyticsRes.data
-          : Array.isArray(analyticsRes.data.data)
-          ? analyticsRes.data.data
-          : [];
-
-        setSpaces(spacesData);
-        setAnalytics(analyticsData);
       } catch (err) {
-        console.error('Data fetch error:', err.message);
-        toast.error(err.message || 'Failed to fetch data');
+        console.error('Error fetching spaces:', err);
+        const errorMessage = err.response?.data?.error?.message || err.message || 'Failed to load spaces';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [token]);
+    fetchSpaces();
+  }, [user, navigate]);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-lg text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      <div className="container mx-auto p-4">
-        <h2 className="text-2xl font-bold mb-4">Space Owner Dashboard</h2>
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6 text-blue-600">Space Owner Dashboard</h1>
 
-        {/* Spaces Section */}
-        <h3 className="text-xl font-semibold mb-2">Your Spaces</h3>
-        {spaces.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <h2 className="text-2xl font-semibold mb-4 text-black">Your Spaces</h2>
+        {spaces.length === 0 ? (
+          <div className="text-center">
+            <p className="text-gray-500 mb-4">No spaces found. Add a space to get started.</p>
+            <Button
+              className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white"
+              onClick={() => navigate('/registration')}
+            >
+              Add Space
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-8">
             {spaces.map((space) => (
-              <div
-                key={space._id}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer h-full"
-              >
-                {space.listingType === 'premium' && (
-                  <div className="absolute top-2 left-2 bg-yellow-400 text-black px-2 py-1 rounded-md flex items-center text-xs font-bold z-10">
-                    <Star size={12} className="mr-1 fill-black" />
-                    PREMIUM
-                  </div>
-                )}
-
-                <div className="h-48 overflow-hidden">
-                  <img
-                    src={space.photos && space.photos.length > 0 ? space.photos[0] : '/placeholder-space.jpg'}
-                    alt={space.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.src = '/placeholder-space.jpg';
-                    }}
-                  />
-                </div>
-
-                <div className="p-4">
-                  <h4 className="font-bold text-lg mb-1">{space.name}</h4>
-                  <div className="flex items-center text-gray-600 mb-2">
-                    <MapPin size={16} className="mr-1" />
-                    <span>{space.address}, {space.city}, {space.pincode}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mb-2 text-sm text-gray-600">
-                    <div>
-                      <span className="font-medium">Type:</span> {space.type}
-                    </div>
-                    <div>
-                      <span className="font-medium">Price:</span> ₹{space.price?.toLocaleString() || 'N/A'}
-                    </div>
-                    <div>
-                      <span className="font-medium">Status:</span> {space.status}
-                    </div>
-                    {space.weekdayFootfall && (
-                      <div>
-                        <span className="font-medium">Weekday Footfall:</span> {space.weekdayFootfall}
-                      </div>
-                    )}
-                    {space.weekendFootfall && (
-                      <div>
-                        <span className="font-medium">Weekend Footfall:</span> {space.weekendFootfall}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-xs text-blue-800">
-                    {space.hasCCTV === 'yes' && (
-                      <span className="bg-blue-100 px-2 py-1 rounded-full">CCTV</span>
-                    )}
-                    {space.heatMapping === 'yes' && (
-                      <span className="bg-blue-100 px-2 py-1 rounded-full">Heat Mapping</span>
-                    )}
-                    {space.brandingAreaSize && (
-                      <span className="bg-blue-100 px-2 py-1 rounded-full">
-                        {space.brandingAreaSize} Branding Area
-                      </span>
-                    )}
-                  </div>
-                </div>
+              <div key={space._id} className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-xl font-semibold mb-2 text-black">{space.name}</h3>
+                <p className="text-gray-600 mb-4">{space.city}, {space.type}</p>
+                <OwnerBookings spaceId={space._id} />
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-center text-gray-600 mb-8">No spaces found.</p>
         )}
-
-        {/* Footfall Analytics Section */}
-        <h3 className="text-xl font-semibold mb-2">Footfall Analytics</h3>
-        <table className="w-full border-collapse border">
-          <thead>
-            <tr>
-              <th className="border p-2">Space Name</th>
-              <th className="border p-2">City</th>
-              <th className="border p-2">Campaign Title</th>
-              <th className="border p-2">Weekday Footfall</th>
-              <th className="border p-2">Weekend Footfall</th>
-              <th className="border p-2">Impressions</th>
-              <th className="border p-2">Clicks</th>
-              <th className="border p-2">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {analytics.length > 0 ? (
-              analytics.map((data) => (
-                <tr key={data.spaceId}>
-                  <td className="border p-2">{data.space?.name ?? 'N/A'}</td>
-                  <td className="border p-2">{data.space?.city ?? 'N/A'}</td>
-                  <td className="border p-2">{data.campaignTitle ?? 'N/A'}</td>
-                  <td className="border p-2">{data.space?.weekdayFootfall ?? 'N/A'}</td>
-                  <td className="border p-2">{data.space?.weekendFootfall ?? 'N/A'}</td>
-                  <td className="border p-2">{data.impressions ?? 'N/A'}</td>
-                  <td className="border p-2">{data.clicks ?? 'N/A'}</td>
-                  <td className="border p-2">{new Date(data.date).toLocaleDateString() ?? 'N/A'}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td className="border p-2 text-center" colSpan="8">No analytics data found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      </main>
+      <Footer />
+      <ToastContainer position="bottom-right" autoClose={3000} />
     </div>
   );
-}
+};
+
+export default SpaceownerDashboard;

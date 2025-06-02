@@ -12,6 +12,7 @@ import Analytics from './api/Analytics/model/Analytics.js';
 import analyticsRoutes from './api/Analytics/router/analyticsRoute.js';
 import campaignRoutes from './api/campaign/router/campaignRoute.js';
 import availablityRoutes from './api/calender/router/availablityrouter.js'
+import bookingRoutes from './api/Booking/router/bookingrouter.js'
 
 loadEnv();
 
@@ -35,6 +36,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/spaces',spaceRoutes)
 app.use('/api/availabilities', availablityRoutes)
+app.use('/api/bookings',bookingRoutes)
 
 
 // Health check
