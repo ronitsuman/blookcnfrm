@@ -2,6 +2,7 @@ import Booking from '../model/booking.js';
 import Space from '../../space/model/Space.js';
 import Availability from '../../calender/model/availablitymodel.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError } from '../../../common/error/index.js';
+import mongoose from 'mongoose';
 
 // Placeholder for Razorpay (add keys later)
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'your_key_id';
@@ -213,22 +214,74 @@ const getUserBookings = async (req, res) => {
 //   }
 // };
 
+// const getSpaceBookings = async (req, res) => {
+//   try {
+//     const { spaceId } = req.params;
+//     const userId = req.user?.id;
+
+//     console.log('getSpaceBookings: spaceId:', spaceId, 'userId:', userId); // Debug
+
+//     if (!userId) throw new UnauthorizedError('User not authenticated');
+//     if (!spaceId) throw new BadRequestError('Space ID is required');
+
+//     const space = await Space.findById(spaceId);
+//     if (!space) throw new BadRequestError('Space not found');
+
+//     console.log('Space document:', space); // Debug
+//     if (!space.owner) throw new BadRequestError('Space has no assigned owner');
+//     if (space.owner.toString() !== userId) {
+//       throw new ForbiddenError('Only space owner can view bookings');
+//     }
+
+//     const bookings = await Booking.find({ spaceId })
+//       .populate('userId', 'name email')
+//       .lean();
+
+//     console.log('Fetched bookings:', bookings); // Debug
+
+//     res.status(200).json({
+//       status: 'success',
+//       data: bookings,
+//     });
+//   } catch (err) {
+//     console.error(`Error in getSpaceBookings: ${err.message}`, err.stack);
+//     res.status(err.statusCode || 500).json({
+//       error: {
+//         message: err.message || 'Internal server error',
+//         status: err.statusCode || 500,
+//       },
+//     });
+//   }
+// };
+
 const getSpaceBookings = async (req, res) => {
   try {
     const { spaceId } = req.params;
-    const userId = req.user?.id;
+    let userId = req.user?.id;
 
-    console.log('getSpaceBookings: spaceId:', spaceId, 'userId:', userId); // Debug
+    console.log('getSpaceBookings: spaceId:', spaceId, 'userId (raw):', userId); // Debug
+    console.log('Request headers:', req.headers); // Debug token
 
     if (!userId) throw new UnauthorizedError('User not authenticated');
     if (!spaceId) throw new BadRequestError('Space ID is required');
+
+    // Normalize userId to string if it's an ObjectId
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      userId = userId.toString();
+    }
+    console.log('Normalized userId:', userId); // Debug
 
     const space = await Space.findById(spaceId);
     if (!space) throw new BadRequestError('Space not found');
 
     console.log('Space document:', space); // Debug
-    if (!space.owner) throw new BadRequestError('Space has no assigned owner');
+    if (!space.owner) {
+      console.error('Space has no owner assigned:', spaceId);
+      throw new BadRequestError('Space has no assigned owner');
+    }
+
     if (space.owner.toString() !== userId) {
+      console.log('Owner mismatch: space.owner:', space.owner.toString(), 'userId:', userId);
       throw new ForbiddenError('Only space owner can view bookings');
     }
 
@@ -252,12 +305,71 @@ const getSpaceBookings = async (req, res) => {
     });
   }
 };
+// const updateBookingStatus = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { status } = req.body;
+//     const userId = req.user?.id;
+
+//     if (!userId) throw new UnauthorizedError('User not authenticated');
+//     if (!id || !status) throw new BadRequestError('Booking ID and status are required');
+//     if (!['confirmed', 'rejected'].includes(status)) {
+//       throw new BadRequestError('Invalid status');
+//     }
+
+//     const booking = await Booking.findById(id);
+//     if (!booking) throw new BadRequestError('Booking not found');
+
+//     const space = await Space.findById(booking.spaceId);
+//     if (!space || space.owner.toString() !== userId) {
+//       throw new ForbiddenError('Only space owner can update booking status');
+//     }
+
+//     if (booking.status !== 'pending') {
+//       throw new BadRequestError('Booking is already processed');
+//     }
+
+//     booking.status = status;
+//     if (status === 'confirmed') {
+//       // Update availability status
+//       await Availability.updateOne(
+//         {
+//           spaceId: booking.spaceId,
+//           startDate: { $lte: booking.startDate },
+//           endDate: { $gte: booking.endDate },
+//           status: 'available',
+//         },
+//         { status: 'booked' }
+//       );
+//       booking.paymentStatus = 'completed'; // Assume payment done
+//     }
+//     await booking.save();
+
+//     res.status(200).json({
+//       status: 'success',
+//       message: `Booking ${status}`,
+//       data: booking,
+//     });
+//   } catch (err) {
+//     console.error(`Error in updateBookingStatus: ${err.message}`, err.stack);
+//     res.status(err.statusCode || 500).json({
+//       error: {
+//         message: err.message || 'Internal server error',
+//         status: err.statusCode || 500,
+//       },
+//     });
+//   }
+// };
+
 
 const updateBookingStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = req.user?.id;
+    let userId = req.user?.id;
+
+    console.log('updateBookingStatus: bookingId:', id, 'userId (raw):', userId, 'status:', status); // Debug
+    console.log('Request headers:', req.headers); // Debug token
 
     if (!userId) throw new UnauthorizedError('User not authenticated');
     if (!id || !status) throw new BadRequestError('Booking ID and status are required');
@@ -265,12 +377,28 @@ const updateBookingStatus = async (req, res) => {
       throw new BadRequestError('Invalid status');
     }
 
+    // Normalize userId to string
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      userId = userId.toString();
+    }
+    console.log('Normalized userId:', userId); // Debug
+
     const booking = await Booking.findById(id);
     if (!booking) throw new BadRequestError('Booking not found');
 
     const space = await Space.findById(booking.spaceId);
-    if (!space || space.owner.toString() !== userId) {
-      throw new ForbiddenError('Only space owner can update booking status');
+    if (!space) throw new BadRequestError('Space not found');
+
+    console.log('Space document:', space); // Debug
+    if (!space.owner) {
+      console.error('Space has no owner assigned:', booking.spaceId);
+      throw new BadRequestError('Space has no assigned owner');
+    }
+
+    // Allow admin or space owner
+    if (req.user.role !== 'admin' && space.owner.toString() !== userId) {
+      console.log('Owner mismatch: space.owner:', space.owner.toString(), 'userId:', userId, 'userRole:', req.user.role);
+      throw new ForbiddenError('Only space owner or admin can update booking status');
     }
 
     if (booking.status !== 'pending') {
@@ -309,17 +437,69 @@ const updateBookingStatus = async (req, res) => {
   }
 };
 
+
+// const cancelBooking = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const userId = req.user?.id;
+
+//     if (!userId) throw new UnauthorizedError('User not authenticated');
+//     if (!id) throw new BadRequestError('Booking ID is required');
+
+//     const booking = await Booking.findById(id);
+//     if (!booking) throw new BadRequestError('Booking not found');
+//     if (booking.userId.toString() !== userId) {
+//       throw new ForbiddenError('Only booking creator can cancel');
+//     }
+
+//     if (booking.status !== 'pending') {
+//       throw new BadRequestError('Only pending bookings can be cancelled');
+//     }
+
+//     booking.status = 'cancelled';
+//     await booking.save();
+
+//     res.status(200).json({
+//       status: 'success',
+//       message: 'Booking cancelled',
+//     });
+//   } catch (err) {
+//     console.error(`Error in cancelBooking: ${err.message}`, err.stack);
+//     res.status(err.statusCode || 500).json({
+//       error: {
+//         message: err.message || 'Internal server error',
+//         status: err.statusCode || 500,
+//       },
+//     });
+//   }
+// };
+
+// Placeholder Razorpay functions
+
+
 const cancelBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id;
+    let userId = req.user?.id;
+
+    console.log('cancelBooking: bookingId:', id, 'userId (raw):', userId); // Debug
+    console.log('Request headers:', req.headers); // Debug token
 
     if (!userId) throw new UnauthorizedError('User not authenticated');
     if (!id) throw new BadRequestError('Booking ID is required');
 
+    // Normalize userId to string
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      userId = userId.toString();
+    }
+    console.log('Normalized userId:', userId); // Debug
+
     const booking = await Booking.findById(id);
     if (!booking) throw new BadRequestError('Booking not found');
+
+    console.log('Booking document:', booking); // Debug
     if (booking.userId.toString() !== userId) {
+      console.log('Creator mismatch: booking.userId:', booking.userId.toString(), 'userId:', userId);
       throw new ForbiddenError('Only booking creator can cancel');
     }
 
@@ -345,7 +525,6 @@ const cancelBooking = async (req, res) => {
   }
 };
 
-// Placeholder Razorpay functions
 const createRazorpayOrder = async (bookingId, amount) => {
   // TODO: Add Razorpay integration
   // const Razorpay = require('razorpay');
