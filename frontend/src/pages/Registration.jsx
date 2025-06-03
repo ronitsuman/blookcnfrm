@@ -2103,7 +2103,1219 @@
 // export default Registration;
 
 
-//final registration
+// //final registration
+// import { useState, useEffect } from 'react';
+// import { useSelector } from 'react-redux';
+// import { useNavigate } from 'react-router-dom';
+// import axios from 'axios';
+// import { toast, ToastContainer } from 'react-toastify';
+// import 'react-toastify/dist/ReactToastify.css';
+// import Footer from '../components/Footer';
+// import { Button } from '../components/ui/Button';
+// import Navbar from '../components/Navbar';
+// import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+
+// const Registration = () => {
+//   const apikey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+//   const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
+//   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+//   const { user } = useSelector((state) => state.user);
+//   const navigate = useNavigate();
+
+//   const [showLoginPopup, setShowLoginPopup] = useState(false);
+//   const [isSubmitting, setIsSubmitting] = useState(false);
+//   const [locationError, setLocationError] = useState('');
+//   const [showMapModal, setShowMapModal] = useState(false);
+//   const [markerPosition, setMarkerPosition] = useState(null);
+//   const [watchId, setWatchId] = useState(null);
+//   const [spaceCount, setSpaceCount] = useState(null);
+//   const [showPopup, setShowPopup] = useState(false);
+//   const [listingType, setListingType] = useState('free');
+//   const [showAccountUpdate, setShowAccountUpdate] = useState(false);
+//   const [accountFormData, setAccountFormData] = useState({
+//     bankDetails: {
+//       accountNumber: '',
+//       ifscCode: '',
+//       bankName: '',
+//       accountHolderName: '',
+//     },
+//   });
+//   const [formData, setFormData] = useState({
+//     name: '',
+//     type: '',
+//     managerName: '',
+//     phone: '',
+//     email: '',
+//     address: '',
+//     city: '',
+//     pincode: '',
+//     landmark: '',
+//     latitude: '',
+//     longitude: '',
+//     weekdayFootfall: '',
+//     weekendFootfall: '',
+//     brandingAreaSize: '',
+//     hasCCTV: '',
+//     cameraCount: '',
+//     cameraAligned: '',
+//     complianceDetails: {
+//       panNumber: '',
+//       gstNumber: '',
+//     },
+//     heatMapping: '',
+//     listingType: 'free',
+//     preferredTiming: '',
+//     photos: [],
+//     price: '',
+//     agentId: '',
+//     bankDetails: {
+//       accountNumber: '',
+//       ifscCode: '',
+//       bankName: '',
+//       accountHolderName: '',
+//     },
+//     ageGroupMix: '',
+//     availabilities: [], // For initial availability slots
+//   });
+
+//   useEffect(() => {
+//     if (user && user.id) {
+//       setFormData((prev) => ({ ...prev, agentId: user.id }));
+//       const fetchSpaceCount = async () => {
+//         try {
+//           const token = localStorage.getItem('token');
+//           const userResponse = await axios.get(`${apiUrl}/users/me`, {
+//             headers: { Authorization: `Bearer ${token}` },
+//           });
+//           setSpaceCount(userResponse.data.data.user?.spaceCount || 0);
+//         } catch (error) {
+//           console.error('Failed to fetch spaceCount:', error);
+//           setSpaceCount(0);
+//           toast.error('Failed to fetch user data.');
+//         }
+//       };
+//       fetchSpaceCount();
+//     }
+
+//     const timer = setTimeout(() => {
+//       if (!user) setShowLoginPopup(true);
+//     }, 5000);
+
+//     if (navigator.geolocation) {
+//       const id = navigator.geolocation.watchPosition(
+//         (position) => {
+//           const lat = position.coords.latitude;
+//           const lng = position.coords.longitude;
+//           setFormData((prev) => ({
+//             ...prev,
+//             latitude: lat.toString(),
+//             longitude: lng.toString(),
+//           }));
+//           setMarkerPosition({ lat, lng });
+//           toast.success('Live location captured!');
+//           navigator.geolocation.clearWatch(id);
+//           setWatchId(null);
+//         },
+//         (error) => {
+//           let errorMessage = 'Unable to retrieve location.';
+//           switch (error.code) {
+//             case error.PERMISSION_DENIED:
+//               errorMessage = 'Location access denied.';
+//               break;
+//             case error.POSITION_UNAVAILABLE:
+//               errorMessage = 'Location unavailable.';
+//               break;
+//             case error.TIMEOUT:
+//               errorMessage = 'Location request timed out.';
+//               break;
+//           }
+//           setLocationError(errorMessage);
+//           toast.error(errorMessage);
+//         },
+//         { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+//       );
+//       setWatchId(id);
+//     } else {
+//       setLocationError('Geolocation not supported.');
+//       toast.error('Geolocation not supported.');
+//     }
+
+//     return () => {
+//       clearTimeout(timer);
+//       if (watchId) navigator.geolocation.clearWatch(watchId);
+//     };
+//   }, [user]);
+
+//   const handleLoginRedirect = () => navigate('/login');
+
+//   const handleChange = (e) => {
+//     const { name, value } = e.target;
+//     if (name.startsWith('bankDetails.') || name.startsWith('complianceDetails.')) {
+//       const [parent, field] = name.split('.');
+//       setFormData((prev) => ({
+//         ...prev,
+//         [parent]: { ...prev[parent], [field]: value },
+//       }));
+//     } else {
+//       setFormData((prev) => ({ ...prev, [name]: value }));
+//     }
+//   };
+
+//   const handleAccountChange = (e) => {
+//     const { name, value } = e.target;
+//     const field = name.split('.')[1];
+//     setAccountFormData((prev) => ({
+//       ...prev,
+//       bankDetails: { ...prev.bankDetails, [field]: value },
+//     }));
+//   };
+
+//   const handleFileUpload = (e) => {
+//     const files = Array.from(e.target.files);
+//     const validFiles = files.filter((file) => {
+//       if (!['image/jpeg', 'image/png'].includes(file.type)) {
+//         toast.error(`${file.name}: Only JPG/PNG allowed.`);
+//         return false;
+//       }
+//       if (file.size > 2 * 1024 * 1024) {
+//         toast.error(`${file.name}: File size must be < 2MB.`);
+//         return false;
+//       }
+//       return true;
+//     });
+
+//     Promise.all(
+//       validFiles.map((file) => new Promise((resolve, reject) => {
+//         const reader = new FileReader();
+//         reader.onloadend = () => resolve(reader.result);
+//         reader.onerror = reject;
+//         reader.readAsDataURL(file);
+//       }))
+//     )
+//       .then((base64Images) => {
+//         setFormData((prev) => ({
+//           ...prev,
+//           photos: [...prev.photos, ...base64Images],
+//         }));
+//         toast.success(`${validFiles.length} photo(s) uploaded!`);
+//       })
+//       .catch((err) => {
+//         console.error('Failed to convert photos:', err);
+//         toast.error('Failed to process photos.');
+//       });
+//   };
+
+//   const handleRemovePhoto = (index) => {
+//     setFormData((prev) => ({
+//       ...prev,
+//       photos: prev.photos.filter((_, i) => i !== index),
+//     }));
+//     toast.info('Photo removed!');
+//   };
+
+//   const handleOpenMapModal = () => {
+//     setShowMapModal(true);
+//     setLocationError('');
+//     if (formData.latitude && formData.longitude) {
+//       setMarkerPosition({
+//         lat: parseFloat(formData.latitude),
+//         lng: parseFloat(formData.longitude),
+//       });
+//     }
+//   };
+
+//   const handleMapClick = (event) => {
+//     if (event.detail.latLng) {
+//       const lat = event.detail.latLng.lat;
+//       const lng = event.detail.latLng.lng;
+//       setMarkerPosition({ lat, lng });
+//       setFormData((prev) => ({
+//         ...prev,
+//         latitude: lat.toString(),
+//         longitude: lng.toString(),
+//       }));
+//     }
+//   };
+
+//   const handleMarkerDrag = (event) => {
+//     const lat = event.latLng.lat();
+//     const lng = event.latLng.lng();
+//     setMarkerPosition({ lat, lng });
+//     setFormData((prev) => ({
+//       ...prev,
+//       latitude: lat.toString(),
+//       longitude: lng.toString(),
+//     }));
+//   };
+
+//   const handleConfirmLocation = () => {
+//     if (markerPosition) {
+//       setFormData((prev) => ({
+//         ...prev,
+//         latitude: markerPosition.lat.toString(),
+//         longitude: markerPosition.lng.toString(),
+//       }));
+//       toast.success(`Location set: Lat: ${markerPosition.lat}, Lng: ${markerPosition.lng}`);
+//       setShowMapModal(false);
+//     } else {
+//       toast.error('Please select a location on the map.');
+//     }
+//   };
+
+//   const handleCloseMapModal = () => {
+//     setShowMapModal(false);
+//     setMarkerPosition(null);
+//   };
+
+//   const handleAddAvailability = () => {
+//     setFormData(prev => ({
+//       ...prev,
+//       availabilities: [...prev.availabilities, { startDate: '', endDate: '', price: '' }],
+//     }));
+//   };
+
+//   const handleAvailabilityChange = (index, e) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => {
+//       const updatedAvailabilities = [...prev.availabilities];
+//       updatedAvailabilities[index] = { ...updatedAvailabilities[index], [name]: value };
+//       return { ...prev, availabilities: updatedAvailabilities };
+//     });
+//   };
+
+//   const handleRemoveAvailability = (index) => {
+//     setFormData(prev => ({
+//       ...prev,
+//       availabilities: prev.availabilities.filter((_, i) => i !== index),
+//     }));
+//     toast.info('Availability slot removed');
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     if (!user || !user.id) {
+//       setShowLoginPopup(true);
+//       toast.error('Please log in to submit.');
+//       return;
+//     }
+
+//     if (!isFormValid()) {
+//       toast.error('Please fill all required fields.');
+//       return;
+//     }
+
+//     const token = localStorage.getItem('token');
+//     if (!token) {
+//       toast.error('Authentication token missing.');
+//       return;
+//     }
+
+//     if (isSubmitting) {
+//       toast.info('Submission in progress...');
+//       return;
+//     }
+
+//     setIsSubmitting(true);
+
+//     try {
+//       const spaceData = {
+//         name: formData.name,
+//         type: formData.type,
+//         managerName: formData.managerName,
+//         phone: formData.phone,
+//         email: formData.email || undefined,
+//         address: formData.address,
+//         city: formData.city,
+//         pincode: formData.pincode,
+//         landmark: formData.landmark || undefined,
+//         location: {
+//           coordinates: [parseFloat(formData.longitude), parseFloat(formData.latitude)],
+//         },
+//         weekdayFootfall: formData.weekdayFootfall ? Number(formData.weekdayFootfall) : undefined,
+//         weekendFootfall: formData.weekendFootfall ? Number(formData.weekendFootfall) : undefined,
+//         brandingAreaSize: formData.brandingAreaSize || undefined,
+//         hasCCTV: formData.hasCCTV || undefined,
+//         cameraCount: formData.cameraCount ? Number(formData.cameraCount) : undefined,
+//         cameraAligned: formData.cameraAligned || undefined,
+//         complianceDetails: {
+//           panNumber: formData.complianceDetails.panNumber || undefined,
+//           gstNumber: formData.complianceDetails.gstNumber || undefined,
+//         },
+//         heatMapping: formData.heatMapping || undefined,
+//         listingType: formData.listingType || 'free',
+//         preferredTiming: formData.preferredTiming || undefined,
+//         photos: formData.photos,
+//         price: Number(formData.price),
+//         agentId: formData.agentId || undefined,
+//         bankDetails: spaceCount === 0 ? formData.bankDetails : undefined,
+//         ageGroupMix: formData.ageGroupMix || undefined,
+//         availabilities: formData.availabilities.filter(avail => avail.startDate && avail.endDate),
+//       };
+
+//       const response = await axios.post(`${apiUrl}/spaces`, spaceData, {
+//         headers: {
+//           'Content-Type': 'application/json',
+//           Authorization: `Bearer ${token}`,
+//         },
+//       });
+
+//       setListingType(formData.listingType);
+//       setShowPopup(true);
+
+//       if (formData.listingType === 'free') {
+//         setFormData({
+//           name: '',
+//           type: '',
+//           managerName: '',
+//           phone: '',
+//           email: '',
+//           address: '',
+//           city: '',
+//           pincode: '',
+//           landmark: '',
+//           latitude: '',
+//           longitude: '',
+//           weekdayFootfall: '',
+//           weekendFootfall: '',
+//           brandingAreaSize: '',
+//           hasCCTV: '',
+//           cameraCount: '',
+//           cameraAligned: '',
+//           complianceDetails: { panNumber: '', gstNumber: '' },
+//           heatMapping: '',
+//           listingType: 'free',
+//           preferredTiming: '',
+//           photos: [],
+//           price: '',
+//           agentId: user?.id || '',
+//           bankDetails: {
+//             accountNumber: '',
+//             ifscCode: '',
+//             bankName: '',
+//             accountHolderName: '',
+//           },
+//           ageGroupMix: '',
+//           availabilities: [],
+//         });
+//       }
+//     } catch (error) {
+//       const errorMessage = error.response?.data?.error?.message || 'Registration failed.';
+//       toast.error(errorMessage);
+//     } finally {
+//       setIsSubmitting(false);
+//     }
+//   };
+
+//   const handleAccountUpdateSubmit = async (e) => {
+//     e.preventDefault();
+//     const token = localStorage.getItem('token');
+//     if (!token) {
+//       toast.error('Authentication token missing.');
+//       return;
+//     }
+
+//     try {
+//       await axios.put(`${apiUrl}/spaces/update-account`, accountFormData, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       toast.success('Bank details updated successfully!');
+//       setShowAccountUpdate(false);
+//     } catch (error) {
+//       const errorMessage = error.response?.data?.error?.message || 'Failed to update bank details.';
+//       toast.error(errorMessage);
+//     }
+//   };
+
+//   const isFormValid = () => (
+//     formData.name &&
+//     formData.type &&
+//     formData.managerName &&
+//     formData.phone &&
+//     formData.address &&
+//     formData.city &&
+//     formData.pincode &&
+//     formData.price &&
+//     formData.photos.length > 0 &&
+//     formData.latitude &&
+//     formData.longitude &&
+//     (formData.hasCCTV !== 'yes' || (formData.cameraCount && formData.cameraAligned)) &&
+//     !isSubmitting &&
+//     (spaceCount !== 0 ||
+//       (formData.bankDetails.accountNumber &&
+//         formData.bankDetails.ifscCode &&
+//         formData.bankDetails.bankName &&
+//         formData.bankDetails.accountHolderName))
+//   );
+
+//   const renderFileUpload = () => (
+//     <div>
+//       <label className="block text-sm font-medium text-gray-700 mb-1">
+//         Upload Photos (At least one required) <span className="text-red-500">*</span>
+//       </label>
+//       <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+//         <input
+//           type="file"
+//           accept="image/jpeg,image/png"
+//           multiple
+//           onChange={handleFileUpload}
+//           className="hidden"
+//           id="photos"
+//           aria-label="Upload Photos"
+//         />
+//         <label htmlFor="photos" className="cursor-pointer">
+//           <div className="flex justify-center">
+//             <svg
+//               xmlns="http://www.w3.org/2000/svg"
+//               className="h-12 w-12 text-gray-400"
+//               fill="none"
+//               viewBox="0 0 24 24"
+//               stroke="currentColor"
+//             >
+//               <path
+//                 strokeLinecap="round"
+//                 strokeLinejoin="round"
+//                 strokeWidth={2}
+//                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+//               />
+//             </svg>
+//           </div>
+//           <p className="mt-2 text-sm text-gray-500">Click to upload or drag and drop</p>
+//           <p className="mt-1 text-xs text-gray-500">JPG or PNG (Max. 2MB)</p>
+//         </label>
+//       </div>
+//       {formData.photos.length > 0 && (
+//         <div className="mt-4 flex flex-wrap gap-2">
+//           {formData.photos.map((photo, index) => (
+//             <div key={index} className="relative">
+//               <img src={photo} alt={`Photo ${index + 1}`} className="h-24 w-24 object-cover rounded" />
+//               <button
+//                 type="button"
+//                 onClick={() => handleRemovePhoto(index)}
+//                 className="absolute top-0 right-0 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center"
+//               >
+//                 ×
+//               </button>
+//             </div>
+//           ))}
+//         </div>
+//       )}
+//     </div>
+//   );
+
+//   const renderAvailabilityForm = () => (
+//     <div className="mt-6">
+//       <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Initial Availability (Optional)</h3>
+//       {formData.availabilities.map((avail, index) => (
+//         <div key={index} className="mb-4 p-4 bg-gray-100 rounded-md">
+//           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date & Time</label>
+//               <input
+//                 type="datetime-local"
+//                 name="startDate"
+//                 value={avail.startDate}
+//                 onChange={(e) => handleAvailabilityChange(index, e)}
+//                 className="w-full p-2 border border-gray-300 rounded-md"
+//               />
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">End Date & Time</label>
+//               <input
+//                 type="datetime-local"
+//                 name="endDate"
+//                 value={avail.endDate}
+//                 onChange={(e) => handleAvailabilityChange(index, e)}
+//                 className="w-full p-2 border border-gray-300 rounded-md"
+//               />
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Price (Optional)</label>
+//               <input
+//                 type="number"
+//                 name="price"
+//                 value={avail.price}
+//                 onChange={(e) => handleAvailabilityChange(index, e)}
+//                 placeholder="Price per slot"
+//                 className="w-full p-2 border border-gray-300 rounded-md"
+//               />
+//             </div>
+//           </div>
+//           <Button
+//             type="button"
+//             onClick={() => handleRemoveAvailability(index)}
+//             className="mt-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+//           >
+//             Remove
+//           </Button>
+//         </div>
+//       ))}
+//       <Button
+//         type="button"
+//         onClick={handleAddAvailability}
+//         className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+//       >
+//         Add Availability Slot
+//       </Button>
+//     </div>
+//   );
+
+//   return (
+//     <>
+//       <Navbar />
+//       <div className="min-h-screen flex flex-col">
+//         {showLoginPopup && !user && (
+//           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+//             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+//               <h2 className="text-xl font-bold mb-4 text-center">Login Required</h2>
+//               <p className="text-gray-600 mb-6 text-center">Please login to list your space.</p>
+//               <div className="flex justify-center">
+//                 <Button
+//                   onClick={handleLoginRedirect}
+//                   className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+//                 >
+//                   Go to Login
+//                 </Button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {showMapModal && (
+//           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+//             <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-[90vw] max-h-[80vh] mx-4 flex flex-col">
+//               <div className="flex justify-between items-center mb-4">
+//                 <h2 className="text-xl font-bold">Set Location</h2>
+//                 <Button
+//                   onClick={handleCloseMapModal}
+//                   className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+//                 >
+//                   Close
+//                 </Button>
+//               </div>
+//               <div className="flex-grow w-full map-container" style={{ height: '60vh' }}>
+//                 {apikey && mapId ? (
+//                   <APIProvider apiKey={apikey}>
+//                     <Map
+//                       center={markerPosition || { lat: 28.6139, lng: 77.2090 }}
+//                       zoom={15}
+//                       mapTypeId="roadmap"
+//                       mapId={mapId}
+//                       onClick={handleMapClick}
+//                       gestureHandling="greedy"
+//                       scrollwheel={true}
+//                       disableDefaultUI={false}
+//                       zoomControl={true}
+//                       zoomControlOptions={{ position: 'RIGHT_CENTER' }}
+//                       style={{ height: '100%', width: '100%' }}
+//                     >
+//                       {markerPosition && (
+//                         <AdvancedMarker position={markerPosition} draggable={true} onDragEnd={handleMarkerDrag}>
+//                           <Pin background="#FBBC04" glyphColor="#000" borderColor="#000" />
+//                         </AdvancedMarker>
+//                       )}
+//                     </Map>
+//                   </APIProvider>
+//                 ) : (
+//                   <p className="text-red-600">{apikey ? 'Map ID is missing.' : 'Google Maps API key is missing.'}</p>
+//                 )}
+//               </div>
+//               <div className="mt-4 flex justify-end">
+//                 <Button
+//                   onClick={handleConfirmLocation}
+//                   className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+//                 >
+//                   Confirm Location
+//                 </Button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {showPopup && (
+//           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+//             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+//               <h2 className="text-xl font-bold mb-4 text-center">{listingType === 'free' ? 'Space Added' : 'Space Created'}</h2>
+//               <p className="text-gray-600 mb-6 text-center">
+//                 {listingType === 'free' ? 'Your space is pending verification.' : 'Proceed to payment for premium listing.'}
+//               </p>
+//               <div className="flex justify-center">
+//                 {listingType === 'premium' ? (
+//                   <Button
+//                     onClick={() => navigate('/payment')}
+//                     className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+//                   >
+//                     Pay Now
+//                   </Button>
+//                 ) : (
+//                   <Button
+//                     onClick={() => {
+//                       setShowPopup(false);
+//                       if (spaceCount === 0) setShowAccountUpdate(true);
+//                       else navigate('/dashboard');
+//                     }}
+//                     className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+//                   >
+//                     Close
+//                   </Button>
+//                 )}
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {showAccountUpdate && (
+//           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+//             <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+//               <h2 className="text-xl font-bold mb-4 text-center">Update Bank Details</h2>
+//               <form onSubmit={handleAccountUpdateSubmit} className="space-y-4">
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-1">Account Number *</label>
+//                   <input
+//                     type="text"
+//                     name="bankDetails.accountNumber"
+//                     value={accountFormData.bankDetails.accountNumber}
+//                     onChange={handleAccountChange}
+//                     required
+//                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                   />
+//                 </div>
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-1">IFSC Code *</label>
+//                   <input
+//                     type="text"
+//                     name="bankDetails.ifscCode"
+//                     value={accountFormData.bankDetails.ifscCode}
+//                     onChange={handleAccountChange}
+//                     required
+//                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                   />
+//                 </div>
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name *</label>
+//                   <input
+//                     type="text"
+//                     name="bankDetails.bankName"
+//                     value={accountFormData.bankDetails.bankName}
+//                     onChange={handleAccountChange}
+//                     required
+//                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                   />
+//                 </div>
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder Name *</label>
+//                   <input
+//                     type="text"
+//                     name="bankDetails.accountHolderName"
+//                     value={accountFormData.bankDetails.accountHolderName}
+//                     onChange={handleAccountChange}
+//                     required
+//                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                   />
+//                 </div>
+//                 <div className="flex justify-end space-x-2">
+//                   <Button
+//                     type="button"
+//                     onClick={() => setShowAccountUpdate(false)}
+//                     className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+//                   >
+//                     Cancel
+//                   </Button>
+//                   <Button
+//                     type="submit"
+//                     className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+//                   >
+//                     Update
+//                   </Button>
+//                 </div>
+//               </form>
+//             </div>
+//           </div>
+//         )}
+
+//         <main className="flex-grow text-black placeholder:text-black">
+//           <section className="bg-gradient-to-r from-white to-[#D9D9F3] py-16">
+//             <div className="container mx-auto px-4 text-center">
+//               <h1 className="text-4xl font-bold mb-4">List Your Space</h1>
+//               <p className="text-xl text-gray-700 max-w-2xl mx-auto">
+//                 Start monetizing your unused space in minutes. Fill out the form below to get started.
+//               </p>
+//             </div>
+//           </section>
+
+//           <section className="py-16 bg-white">
+//             <div className="container mx-auto px-4">
+//               <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+//                 <div className="p-8">
+//                   <h2 className="text-2xl font-bold mb-6">Space Registration Form</h2>
+//                   <form onSubmit={handleSubmit} className="space-y-6">
+//                     <div>
+//                       <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Space Details</h3>
+//                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">
+//                             Type of Space <span className="text-red-500">*</span>
+//                           </label>
+//                           <select
+//                             name="type"
+//                             value={formData.type}
+//                             onChange={handleChange}
+//                             required
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                           >
+//                             <option value="">Select type</option>
+//                             <option value="RWA">RWA</option>
+//                             <option value="Mall">Mall</option>
+//                             <option value="Retail">Retail</option>
+//                             <option value="Cafe">Cafe</option>
+//                             <option value="store">Store</option>
+//                             <option value="salon">Salon</option>
+//                             <option value="gym">Gym</option>
+//                             <option value="other">Other</option>
+//                           </select>
+//                         </div>
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">
+//                             Space Name <span className="text-red-500">*</span>
+//                           </label>
+//                           <input
+//                             type="text"
+//                             name="name"
+//                             value={formData.name}
+//                             onChange={handleChange}
+//                             required
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             placeholder="Space Name"
+//                           />
+//                         </div>
+//                       </div>
+
+//                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">
+//                             Manager Name <span className="text-red-500">*</span>
+//                           </label>
+//                           <input
+//                             type="text"
+//                             name="managerName"
+//                             value={formData.managerName}
+//                             onChange={handleChange}
+//                             required
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             placeholder="Manager Name"
+//                           />
+//                         </div>
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">
+//                             Phone Number <span className="text-red-500">*</span>
+//                           </label>
+//                           <input
+//                             type="text"
+//                             name="phone"
+//                             value={formData.phone}
+//                             onChange={handleChange}
+//                             required
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             placeholder="Phone Number"
+//                           />
+//                         </div>
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
+//                         <input
+//                           type="email"
+//                           name="email"
+//                           value={formData.email}
+//                           onChange={handleChange}
+//                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                           placeholder="Email Address"
+//                         />
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">
+//                           Address <span className="text-red-500">*</span>
+//                         </label>
+//                         <textarea
+//                           name="address"
+//                           value={formData.address}
+//                           onChange={handleChange}
+//                           required
+//                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                           rows={3}
+//                           placeholder="Complete address"
+//                         ></textarea>
+//                       </div>
+
+//                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">
+//                             City <span className="text-red-500">*</span>
+//                           </label>
+//                           <input
+//                             type="text"
+//                             name="city"
+//                             value={formData.city}
+//                             onChange={handleChange}
+//                             required
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             placeholder="City"
+//                           />
+//                         </div>
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">
+//                             Pin Code <span className="text-red-500">*</span>
+//                           </label>
+//                           <input
+//                             type="text"
+//                             name="pincode"
+//                             value={formData.pincode}
+//                             onChange={handleChange}
+//                             required
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             placeholder="Pin Code"
+//                           />
+//                         </div>
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">Landmark (Optional)</label>
+//                         <input
+//                           type="text"
+//                           name="landmark"
+//                           value={formData.landmark}
+//                           onChange={handleChange}
+//                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                           placeholder="Nearby landmark"
+//                         />
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">
+//                           Location Coordinates <span className="text-red-500">*</span>
+//                         </label>
+//                         <div className="mb-4 map-container">
+//                           {apikey && mapId ? (
+//                             <APIProvider apiKey={apikey}>
+//                               <Map
+//                                 center={
+//                                   formData.latitude && formData.longitude
+//                                     ? { lat: parseFloat(formData.latitude), lng: parseFloat(formData.longitude) }
+//                                     : { lat: 28.6139, lng: 77.2090 }
+//                                 }
+//                                 zoom={15}
+//                                 mapTypeId="roadmap"
+//                                 mapId={mapId}
+//                                 gestureHandling="greedy"
+//                                 scrollwheel={true}
+//                                 disableDefaultUI={false}
+//                                 zoomControl={true}
+//                                 zoomControlOptions={{ position: 'RIGHT_CENTER' }}
+//                                 style={{ height: '300px', width: '100%' }}
+//                               >
+//                                 {formData.latitude && formData.longitude && (
+//                                   <AdvancedMarker
+//                                     position={{
+//                                       lat: parseFloat(formData.latitude),
+//                                       lng: parseFloat(formData.longitude),
+//                                     }}
+//                                   >
+//                                     <Pin background="#FBBC04" glyphColor="#000" borderColor="#000" />
+//                                   </AdvancedMarker>
+//                                 )}
+//                               </Map>
+//                             </APIProvider>
+//                           ) : (
+//                             <p className="text-red-600">{apikey ? 'Map ID is missing.' : 'Google Maps API key is missing.'}</p>
+//                           )}
+//                         </div>
+//                         <div className="flex flex-col sm:flex-row gap-2 mb-2">
+//                           <Button
+//                             type="button"
+//                             onClick={handleOpenMapModal}
+//                             className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
+//                           >
+//                             Verify Location
+//                           </Button>
+//                         </div>
+//                         {formData.latitude && formData.longitude ? (
+//                           <p className="text-sm text-gray-600">
+//                             Location: Lat: {formData.latitude}, Lng: {formData.longitude}
+//                           </p>
+//                         ) : locationError ? (
+//                           <p className="text-sm text-red-600">{locationError}</p>
+//                         ) : (
+//                           <p className="text-sm text-gray-500">Select a location</p>
+//                         )}
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">
+//                           Price (Monthly) <span className="text-red-500">*</span>
+//                         </label>
+//                         <div className="flex items-center gap-4">
+//                           <p>Rs</p>
+//                           <input
+//                             type="number"
+//                             name="price"
+//                             value={formData.price}
+//                             onChange={handleChange}
+//                             required
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             placeholder="1000"
+//                           />
+//                         </div>
+//                       </div>
+//                     </div>
+
+//                     <div>
+//                       <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Upload Photos</h3>
+//                       <div className="space-y-4">{renderFileUpload()}</div>
+//                     </div>
+
+//                     <div>
+//                       <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Additional Details (Optional)</h3>
+//                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">Weekday Footfall</label>
+//                           <input
+//                             type="number"
+//                             name="weekdayFootfall"
+//                             value={formData.weekdayFootfall}
+//                             onChange={handleChange}
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             placeholder="Average daily visitors"
+//                           />
+//                         </div>
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">Weekend Footfall</label>
+//                           <input
+//                             type="number"
+//                             name="weekendFootfall"
+//                             value={formData.weekendFootfall}
+//                             onChange={handleChange}
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             placeholder="Average weekend visitors"
+//                           />
+//                         </div>
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">Branding Area Size (sq.ft)</label>
+//                         <input
+//                           type="text"
+//                           name="brandingAreaSize"
+//                           value={formData.brandingAreaSize}
+//                           onChange={handleChange}
+//                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                           placeholder="e.g., Wall: 8×6 ft"
+//                         />
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">Age Group Mix</label>
+//                         <input
+//                           type="text"
+//                           name="ageGroupMix"
+//                           value={formData.ageGroupMix}
+//                           onChange={handleChange}
+//                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                           placeholder="e.g., Young adults, Families"
+//                         />
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">CCTV Cameras?</label>
+//                         <select
+//                           name="hasCCTV"
+//                           value={formData.hasCCTV}
+//                           onChange={handleChange}
+//                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                         >
+//                           <option value="">Select</option>
+//                           <option value="yes">Yes</option>
+//                           <option value="no">No</option>
+//                         </select>
+//                       </div>
+
+//                       {formData.hasCCTV === 'yes' && (
+//                         <>
+//                           <div className="mt-4">
+//                             <label className="block text-sm font-medium text-gray-700 mb-1">Camera Count *</label>
+//                             <input
+//                               type="number"
+//                               name="cameraCount"
+//                               value={formData.cameraCount}
+//                               onChange={handleChange}
+//                               required
+//                               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                               placeholder="Number of cameras"
+//                             />
+//                           </div>
+//                           <div className="mt-4">
+//                             <label className="block text-sm font-medium text-gray-700 mb-1">Camera Aligned with Branding Zones? *</label>
+//                             <select
+//                               name="cameraAligned"
+//                               value={formData.cameraAligned}
+//                               onChange={handleChange}
+//                               required
+//                               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             >
+//                               <option value="">Select</option>
+//                               <option value="yes">Yes</option>
+//                               <option value="no">No</option>
+//                               <option value="unsure">Not sure</option>
+//                             </select>
+//                           </div>
+//                         </>
+//                       )}
+
+//                       {spaceCount === 0 && (
+//                         <div className="mt-4">
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">
+//                             Bank Details (Required for First Space) <span className="text-red-500">*</span>
+//                           </label>
+//                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                             <input
+//                               type="text"
+//                               name="bankDetails.accountNumber"
+//                               value={formData.bankDetails.accountNumber}
+//                               onChange={handleChange}
+//                               required
+//                               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                               placeholder="Account Number"
+//                             />
+//                             <input
+//                               type="text"
+//                               name="bankDetails.ifscCode"
+//                               value={formData.bankDetails.ifscCode}
+//                               onChange={handleChange}
+//                               required
+//                               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                               placeholder="IFSC Code"
+//                             />
+//                             <input
+//                               type="text"
+//                               name="bankDetails.bankName"
+//                               value={formData.bankDetails.bankName}
+//                               onChange={handleChange}
+//                               required
+//                               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                               placeholder="Bank Name"
+//                             />
+//                             <input
+//                               type="text"
+//                               name="bankDetails.accountHolderName"
+//                               value={formData.bankDetails.accountHolderName}
+//                               onChange={handleChange}
+//                               required
+//                               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                               placeholder="Account Holder Name"
+//                             />
+//                           </div>
+//                         </div>
+//                       )}
+
+//                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
+//                           <input
+//                             type="text"
+//                             name="complianceDetails.panNumber"
+//                             value={formData.complianceDetails.panNumber}
+//                             onChange={handleChange}
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             placeholder="PAN number"
+//                           />
+//                         </div>
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-1">GST Number</label>
+//                           <input
+//                             type="text"
+//                             name="complianceDetails.gstNumber"
+//                             value={formData.complianceDetails.gstNumber}
+//                             onChange={handleChange}
+//                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                             placeholder="GST number"
+//                           />
+//                         </div>
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">Heat Mapping?</label>
+//                         <select
+//                           name="heatMapping"
+//                           value={formData.heatMapping}
+//                           onChange={handleChange}
+//                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                         >
+//                           <option value="">Select</option>
+//                           <option value="yes">Yes</option>
+//                           <option value="no">No</option>
+//                         </select>
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">Listing Type</label>
+//                         <select
+//                           name="listingType"
+//                           value={formData.listingType}
+//                           onChange={handleChange}
+//                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                         >
+//                           <option value="free">Free Listing</option>
+//                           <option value="premium">Premium Listing</option>
+//                         </select>
+//                       </div>
+
+//                       <div className="mt-4">
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Branding Timing</label>
+//                         <input
+//                           type="text"
+//                           name="preferredTiming"
+//                           value={formData.preferredTiming}
+//                           onChange={handleChange}
+//                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4261FF] focus:outline-none"
+//                           placeholder="e.g., Weekends only"
+//                         />
+//                       </div>
+
+//                       {renderAvailabilityForm()}
+//                     </div>
+
+//                     <div className="pt-4">
+//                       <Button
+//                         type="submit"
+//                         className="w-full bg-[#6D4EFF] hover:bg-[#4261FF]"
+//                         size="lg"
+//                         disabled={!isFormValid() || isSubmitting}
+//                       >
+//                         {isSubmitting ? 'Submitting...' : 'Submit Registration'}
+//                       </Button>
+//                       <p className="text-center text-sm text-gray-500 mt-4">
+//                         Your space will be reviewed within 48-72 hours.
+//                       </p>
+//                     </div>
+//                   </form>
+//                 </div>
+//               </div>
+//             </div>
+//           </section>
+//         </main>
+
+//         <Footer />
+//       </div>
+//       <ToastContainer position="bottom-right" autoClose={5000} />
+//     </>
+//   );
+// };
+
+// export default Registration;
+
+
+
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -2113,12 +3325,13 @@ import 'react-toastify/dist/ReactToastify.css';
 import Footer from '../components/Footer';
 import { Button } from '../components/ui/Button';
 import Navbar from '../components/Navbar';
+import SubscriptionModal from '../components/SubscriptionModal';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 
 const Registration = () => {
   const apikey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const apiUrl =  'http://localhost:5000/api';
 
   const { user } = useSelector((state) => state.user);
   const navigate = useNavigate();
@@ -2130,8 +3343,8 @@ const Registration = () => {
   const [markerPosition, setMarkerPosition] = useState(null);
   const [watchId, setWatchId] = useState(null);
   const [spaceCount, setSpaceCount] = useState(null);
-  const [showPopup, setShowPopup] = useState(false);
-  const [listingType, setListingType] = useState('free');
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [tempSpaceData, setTempSpaceData] = useState(null);
   const [showAccountUpdate, setShowAccountUpdate] = useState(false);
   const [accountFormData, setAccountFormData] = useState({
     bankDetails: {
@@ -2176,7 +3389,7 @@ const Registration = () => {
       accountHolderName: '',
     },
     ageGroupMix: '',
-    availabilities: [], // For initial availability slots
+    availabilities: [],
   });
 
   useEffect(() => {
@@ -2369,7 +3582,7 @@ const Registration = () => {
   };
 
   const handleAddAvailability = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       availabilities: [...prev.availabilities, { startDate: '', endDate: '', price: '' }],
     }));
@@ -2377,7 +3590,7 @@ const Registration = () => {
 
   const handleAvailabilityChange = (index, e) => {
     const { name, value } = e.target;
-    setFormData(prev => {
+    setFormData((prev) => {
       const updatedAvailabilities = [...prev.availabilities];
       updatedAvailabilities[index] = { ...updatedAvailabilities[index], [name]: value };
       return { ...prev, availabilities: updatedAvailabilities };
@@ -2385,7 +3598,7 @@ const Registration = () => {
   };
 
   const handleRemoveAvailability = (index) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       availabilities: prev.availabilities.filter((_, i) => i !== index),
     }));
@@ -2403,12 +3616,6 @@ const Registration = () => {
 
     if (!isFormValid()) {
       toast.error('Please fill all required fields.');
-      return;
-    }
-
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error('Authentication token missing.');
       return;
     }
 
@@ -2451,56 +3658,63 @@ const Registration = () => {
         agentId: formData.agentId || undefined,
         bankDetails: spaceCount === 0 ? formData.bankDetails : undefined,
         ageGroupMix: formData.ageGroupMix || undefined,
-        availabilities: formData.availabilities.filter(avail => avail.startDate && avail.endDate),
+        availabilities: formData.availabilities.filter((avail) => avail.startDate && avail.endDate),
       };
 
-      const response = await axios.post(`${apiUrl}/spaces`, spaceData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setListingType(formData.listingType);
-      setShowPopup(true);
-
-      if (formData.listingType === 'free') {
-        setFormData({
-          name: '',
-          type: '',
-          managerName: '',
-          phone: '',
-          email: '',
-          address: '',
-          city: '',
-          pincode: '',
-          landmark: '',
-          latitude: '',
-          longitude: '',
-          weekdayFootfall: '',
-          weekendFootfall: '',
-          brandingAreaSize: '',
-          hasCCTV: '',
-          cameraCount: '',
-          cameraAligned: '',
-          complianceDetails: { panNumber: '', gstNumber: '' },
-          heatMapping: '',
-          listingType: 'free',
-          preferredTiming: '',
-          photos: [],
-          price: '',
-          agentId: user?.id || '',
-          bankDetails: {
-            accountNumber: '',
-            ifscCode: '',
-            bankName: '',
-            accountHolderName: '',
-          },
-          ageGroupMix: '',
-          availabilities: [],
-        });
-      }
+      // Store space data and open subscription modal
+      setTempSpaceData(spaceData);
+      setShowSubscriptionModal(true);
     } catch (error) {
+      const errorMessage = error.response?.data?.error?.message || 'Registration failed.';
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubscriptionSuccess = async (planType) => {
+    setIsSubmitting(true);
+
+    try {
+      console.log('Registering space with plan:', planType, 'spaceData:', tempSpaceData); // Debug
+
+      // Create space
+      const spaceResponse = await axios.post(
+        `${apiUrl}/spaces`,
+        { ...tempSpaceData, listingType: planType === 'paid' ? 'premium' : 'free' },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+
+      const spaceId = spaceResponse.data.data?._id;
+      console.log('Space created: spaceId=', spaceId); // Debug
+
+      if (!spaceId) {
+        throw new Error('Space ID not returned in response');
+      }
+
+      // Create subscription
+      const subscriptionResponse = await axios.post(
+        `${apiUrl}/subscriptions`,
+        { planType, spaceId },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        }
+      );
+
+      console.log('Subscription created:', subscriptionResponse.data); // Debug
+
+      toast.success('Space registered successfully');
+      setShowSubscriptionModal(false);
+      setTempSpaceData(null);
+      if (spaceCount === 0) setShowAccountUpdate(true);
+      else navigate('/spaceowner-dashboard');
+    } catch (error) {
+      console.error('Error in handleSubscriptionSuccess:', error);
       const errorMessage = error.response?.data?.error?.message || 'Registration failed.';
       toast.error(errorMessage);
     } finally {
@@ -2522,6 +3736,7 @@ const Registration = () => {
       });
       toast.success('Bank details updated successfully!');
       setShowAccountUpdate(false);
+      navigate('/spaceowner-dashboard');
     } catch (error) {
       const errorMessage = error.response?.data?.error?.message || 'Failed to update bank details.';
       toast.error(errorMessage);
@@ -2733,36 +3948,14 @@ const Registration = () => {
           </div>
         )}
 
-        {showPopup && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
-              <h2 className="text-xl font-bold mb-4 text-center">{listingType === 'free' ? 'Space Added' : 'Space Created'}</h2>
-              <p className="text-gray-600 mb-6 text-center">
-                {listingType === 'free' ? 'Your space is pending verification.' : 'Proceed to payment for premium listing.'}
-              </p>
-              <div className="flex justify-center">
-                {listingType === 'premium' ? (
-                  <Button
-                    onClick={() => navigate('/payment')}
-                    className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
-                  >
-                    Pay Now
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => {
-                      setShowPopup(false);
-                      if (spaceCount === 0) setShowAccountUpdate(true);
-                      else navigate('/dashboard');
-                    }}
-                    className="bg-[#4261FF] hover:bg-[#6D4EFF] text-white px-4 py-2 rounded"
-                  >
-                    Close
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
+        {showSubscriptionModal && (
+          <SubscriptionModal
+            onClose={() => {
+              setShowSubscriptionModal(false);
+              setTempSpaceData(null);
+            }}
+            onSubscriptionSuccess={handleSubscriptionSuccess}
+          />
         )}
 
         {showAccountUpdate && (
@@ -2923,7 +4116,7 @@ const Registration = () => {
                       </div>
 
                       <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                         <input
                           type="email"
                           name="email"
@@ -2981,7 +4174,7 @@ const Registration = () => {
                       </div>
 
                       <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Landmark (Optional)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Landmark</label>
                         <input
                           type="text"
                           name="landmark"
@@ -3076,7 +4269,7 @@ const Registration = () => {
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Additional Details (Optional)</h3>
+                      <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Additional Details</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Weekday Footfall</label>

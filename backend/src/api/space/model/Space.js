@@ -271,6 +271,7 @@ const SpaceSchema = new mongoose.Schema({
     enum: ['free', 'premium'],
     default: 'free',
   },
+  priorityLevel: { type: Number, default: 0 },
   preferredTiming: {
     type: String,
     trim: true,

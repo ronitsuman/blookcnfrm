@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { api } from '../utils/api';
+import { api } from '../../utils/api';
 import Razorpay from 'razorpay';
 
 export default function Bookings() {

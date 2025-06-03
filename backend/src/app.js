@@ -9,10 +9,11 @@ import userRoutes from './api/user/routes/userRoutes.js';
 import { loadEnv } from './shared/config/env.js';
 import spaceRoutes from './api/space/routes/spaceRoutes.js';
 import Analytics from './api/Analytics/model/Analytics.js';
-import analyticsRoutes from './api/Analytics/router/analyticsRoute.js';
 import campaignRoutes from './api/campaign/router/campaignRoute.js';
 import availablityRoutes from './api/calender/router/availablityrouter.js'
 import bookingRoutes from './api/Booking/router/bookingrouter.js'
+import analyticsRoutes from './api/Analytics/router/analyticsRoute.js'
+import subscriptionRoutes from './api/subscription/router/subscriptionrouter.js'
 
 loadEnv();
 
@@ -35,6 +36,8 @@ app.use(fileUpload());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/spaces',spaceRoutes)
+app.use('/api/analytics',analyticsRoutes)
+app.use('/api/subscriptions',subscriptionRoutes)
 app.use('/api/availabilities', availablityRoutes)
 app.use('/api/bookings',bookingRoutes)
 
