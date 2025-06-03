@@ -26,6 +26,7 @@ const Navbar = () => {
   const mainNavigationItems = [
     { href: '/how-it-works', label: 'How It Works' },
     { href: '/industries', label: 'Industries We Serve' },
+    { href: '/payment', label: 'Listing option' },
     { href: '/browse-spaces', label: 'Browse Spaces' },
     { href: '/blookforce', label: 'Join BlookForce' },
   ];

@@ -274,6 +274,7 @@ import AnalyticsDashboard from './pages/AnalyticalDashboard';
 import SubscriptionPage from './pages/SubscriptionPage';
 import Success from './pages/Success';
 import TelecallerDashboard from './Dashboard/TelecallerDashboard';
+import PaymentCheckout from './components/PaymentCheckout';
 
 const App = () => {
   return (
@@ -283,6 +284,7 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/navbar" element={<Navbar />} />
+        <Route path="/payment" element={<SubscriptionPage/>} />
         <Route path="/browse-spaces" element={<BrowseSpaces />} />
         <Route path="/spaces/:spaceId/availability" element={<AvailabilityCalendar />} />
         <Route
@@ -309,6 +311,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/subscriptions"
           element={

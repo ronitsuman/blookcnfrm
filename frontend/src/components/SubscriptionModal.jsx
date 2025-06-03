@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Button } from '../components/ui/Button';
 import { Check, X } from 'lucide-react';
 
 const SubscriptionModal = ({ onClose, onSubscriptionSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const apiUrl = process.env.VITE_API_URL || 'http://localhost:5000/api';
+
+  console.log('Rendering SubscriptionModal'); // Debug
 
   const plans = [
     {
@@ -43,23 +41,15 @@ const SubscriptionModal = ({ onClose, onSubscriptionSuccess }) => {
 
   const handleSubscribe = async (planType) => {
     setLoading(true);
+    console.log('handleSubscribe: planType=', planType); // Debug
 
     try {
-      console.log('Subscribing to plan:', planType); // Debug
-
-      if (planType === 'paid') {
-        // Redirect to subscriptions page for payment
-        navigate('/subscriptions');
-        setLoading(false);
-        onClose();
-        return;
-      }
-
-      // For free plan, proceed directly
       onSubscriptionSuccess(planType);
     } catch (err) {
-      console.error('Error in subscription modal:', err);
-      toast.error(err.response?.data?.error?.message || 'Failed to process subscription');
+      console.error('Error in handleSubscribe:', err); // Debug
+      toast.error('Failed to process subscription, proceeding with Free plan.');
+      onSubscriptionSuccess('free');
+    } finally {
       setLoading(false);
     }
   };
@@ -112,7 +102,7 @@ const SubscriptionModal = ({ onClose, onSubscriptionSuccess }) => {
         </div>
         <div className="mt-6 text-center">
           <Button variant="outline" onClick={onClose} disabled={loading}>
-            Skip
+            Skip (Free Plan)
           </Button>
         </div>
       </div>

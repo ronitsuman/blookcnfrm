@@ -1539,69 +1539,202 @@
 
 import Space from '../model/Space.js';
 import User from '../../user/models/User.js';
+import mongoose from 'mongoose';
 import Availability from '../../calender/model/availablitymodel.js';
 import { uploadImageBase64 } from '../../../integrations/cloudinary/cloudinary.config.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError } from '../../../common/error/index.js';
 
+// const createSpace = async (req, res) => {
+//   try {
+//     console.log('Received request body:', req.body);
+
+//     const {
+//       name, type, managerName, phone, email, address, city, pincode, landmark,
+//       location, weekdayFootfall, weekendFootfall, brandingAreaSize, hasCCTV,
+//       cameraCount, cameraAligned, complianceDetails, heatMapping, listingType,
+//       preferredTiming, photos, price, agentId, bankDetails, ageGroupMix, availabilities,
+//     } = req.body;
+//     const userId = req.user?.id;
+
+//     if (!userId) throw new UnauthorizedError('User not authenticated');
+
+//     const user = await User.findById(userId);
+//     if (!user) throw new UnauthorizedError('User not found');
+//     if (user.role !== 'space_owner') throw new ForbiddenError('Only Space Owners can register spaces');
+
+//     if (!name || !type || !managerName || !phone || !address || !city || !pincode || !price) {
+//       throw new BadRequestError('Name, type, manager name, phone, address, city, pincode, and price are required');
+//     }
+
+//     const validSpaceTypes = ['RWA', 'Mall', 'Retail', 'Cafe', 'store', 'salon', 'gym', 'other'];
+//     if (!validSpaceTypes.includes(type)) throw new BadRequestError('Invalid space type');
+
+//     if (hasCCTV === 'yes' && (!cameraCount || !cameraAligned)) {
+//       throw new BadRequestError('Camera count and alignment are required if CCTV is present');
+//     }
+
+//     if (!location || !location.coordinates || !Array.isArray(location.coordinates) || location.coordinates.length !== 2) {
+//       throw new BadRequestError('Valid location coordinates (longitude, latitude) are required');
+//     }
+
+//     const existingSpace = await Space.findOne({ name, owner: userId });
+//     if (existingSpace) throw new BadRequestError('A space with this name already exists for this user');
+
+//     const isFirstSpace = !user.spaces || user.spaces.length === 0;
+
+//     if (isFirstSpace && (!bankDetails || !bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName || !bankDetails.accountHolderName)) {
+//       throw new BadRequestError('All bank details are required for your first space');
+//     }
+
+//     if (!photos || !Array.isArray(photos) || photos.length === 0) {
+//       throw new BadRequestError('At least one photo is required');
+//     }
+
+//     const uploadedPhotos = await Promise.all(
+//       photos.map(async (photoBase64) => {
+//         if (photoBase64 && typeof photoBase64 === 'string' && photoBase64.startsWith('data:image/')) {
+//           return await uploadImageBase64(photoBase64, 'blookmyspace1/spaces');
+//         }
+//         return null;
+//       })
+//     );
+//     const filteredPhotos = uploadedPhotos.filter(url => url);
+//     if (filteredPhotos.length === 0) throw new BadRequestError('At least one valid photo is required');
+
+//     const space = new Space({
+//       owner: userId,
+//       name,
+//       type,
+//       managerName,
+//       phone,
+//       email,
+//       address,
+//       city,
+//       pincode,
+//       landmark,
+//       location: {
+//         type: 'Point',
+//         coordinates: [parseFloat(location.coordinates[0]), parseFloat(location.coordinates[1])],
+//       },
+//       weekdayFootfall: weekdayFootfall ? Number(weekdayFootfall) : undefined,
+//       weekendFootfall: weekendFootfall ? Number(weekendFootfall) : undefined,
+//       brandingAreaSize,
+//       hasCCTV,
+//       cameraCount: cameraCount ? Number(cameraCount) : undefined,
+//       cameraAligned,
+//       complianceDetails: complianceDetails || {},
+//       heatMapping,
+//       listingType: listingType || 'free',
+//       preferredTiming,
+//       photos: filteredPhotos,
+//       price: Number(price),
+//       agentId,
+//       ageGroupMix,
+//       availability: [],
+//     });
+
+//     // Save initial availabilities
+//     if (availabilities && Array.isArray(availabilities) && availabilities.length > 0) {
+//       for (const avail of availabilities) {
+//         if (avail.startDate && avail.endDate) {
+//           const availability = await Availability.create({
+//             spaceId: space._id,
+//             startDate: new Date(avail.startDate),
+//             endDate: new Date(avail.endDate),
+//             price: avail.price ? Number(avail.price) : undefined,
+//           });
+//           space.availability.push(availability._id);
+//         }
+//       }
+//     }
+
+//     await space.save();
+
+//     if (!user.spaces) user.spaces = [];
+//     user.spaces.push(space._id);
+//     user.spaceCount = user.spaces.length;
+
+//     if (isFirstSpace && bankDetails) {
+//       user.bankDetails = bankDetails;
+//     }
+
+//     await user.save();
+
+//     res.status(201).json({
+//       status: 'success',
+//       message: 'Space registered',
+//       data: { space },
+//     });
+//   } catch (err) {
+//     console.error(`Error in createSpace: ${err.message}`, {
+//       stack: err.stack,
+//       requestBody: req.body,
+//       userId: req.user?.id,
+//     });
+//     res.status(err.statusCode || 500).json({
+//       error: {
+//         message: err.message || 'Internal server error',
+//         status: err.statusCode || 500,
+//       },
+//     });
+//   }
+// };
+
+
 const createSpace = async (req, res) => {
   try {
-    console.log('Received request body:', req.body);
-
     const {
-      name, type, managerName, phone, email, address, city, pincode, landmark,
-      location, weekdayFootfall, weekendFootfall, brandingAreaSize, hasCCTV,
-      cameraCount, cameraAligned, complianceDetails, heatMapping, listingType,
-      preferredTiming, photos, price, agentId, bankDetails, ageGroupMix, availabilities,
+      name,
+      type,
+      managerName,
+      phone,
+      email,
+      address,
+      city,
+      pincode,
+      landmark,
+      location,
+      weekdayFootfall,
+      weekendFootfall,
+      brandingAreaSize,
+      hasCCTV,
+      cameraCount,
+      cameraAligned,
+      complianceDetails,
+      heatMapping,
+      listingType,
+      preferredTiming,
+      photos,
+      price,
+      agentId,
+      bankDetails,
+      ageGroupMix,
+      availabilities,
     } = req.body;
-    const userId = req.user?.id;
 
-    if (!userId) throw new UnauthorizedError('User not authenticated');
+    let userId = req.user?.id;
+    console.log('createSpace: userId:', userId, 'spaceData:', JSON.stringify(req.body, null, 2)); // Detailed debug
 
-    const user = await User.findById(userId);
-    if (!user) throw new UnauthorizedError('User not found');
-    if (user.role !== 'space_owner') throw new ForbiddenError('Only Space Owners can register spaces');
+    if (!userId) {
+      console.error('createSpace: No userId provided');
+      throw new UnauthorizedError('User not authenticated');
+    }
 
     if (!name || !type || !managerName || !phone || !address || !city || !pincode || !price) {
-      throw new BadRequestError('Name, type, manager name, phone, address, city, pincode, and price are required');
+      console.error('createSpace: Missing required fields:', { name, type, managerName, phone, address, city, pincode, price });
+      throw new BadRequestError('Missing required fields');
     }
 
-    const validSpaceTypes = ['RWA', 'Mall', 'Retail', 'Cafe', 'store', 'salon', 'gym', 'other'];
-    if (!validSpaceTypes.includes(type)) throw new BadRequestError('Invalid space type');
-
-    if (hasCCTV === 'yes' && (!cameraCount || !cameraAligned)) {
-      throw new BadRequestError('Camera count and alignment are required if CCTV is present');
+    if (!location?.coordinates || location.coordinates.length !== 2) {
+      console.error('createSpace: Invalid location coordinates:', location);
+      throw new BadRequestError('Invalid location coordinates');
     }
 
-    if (!location || !location.coordinates || !Array.isArray(location.coordinates) || location.coordinates.length !== 2) {
-      throw new BadRequestError('Valid location coordinates (longitude, latitude) are required');
+    if (typeof userId !== 'string' && mongoose.Types.ObjectId.isValid(userId)) {
+      userId = userId.toString();
     }
 
-    const existingSpace = await Space.findOne({ name, owner: userId });
-    if (existingSpace) throw new BadRequestError('A space with this name already exists for this user');
-
-    const isFirstSpace = !user.spaces || user.spaces.length === 0;
-
-    if (isFirstSpace && (!bankDetails || !bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName || !bankDetails.accountHolderName)) {
-      throw new BadRequestError('All bank details are required for your first space');
-    }
-
-    if (!photos || !Array.isArray(photos) || photos.length === 0) {
-      throw new BadRequestError('At least one photo is required');
-    }
-
-    const uploadedPhotos = await Promise.all(
-      photos.map(async (photoBase64) => {
-        if (photoBase64 && typeof photoBase64 === 'string' && photoBase64.startsWith('data:image/')) {
-          return await uploadImageBase64(photoBase64, 'blookmyspace1/spaces');
-        }
-        return null;
-      })
-    );
-    const filteredPhotos = uploadedPhotos.filter(url => url);
-    if (filteredPhotos.length === 0) throw new BadRequestError('At least one valid photo is required');
-
-    const space = new Space({
-      owner: userId,
+    const space = await Space.create({
       name,
       type,
       managerName,
@@ -1621,59 +1754,36 @@ const createSpace = async (req, res) => {
       hasCCTV,
       cameraCount: cameraCount ? Number(cameraCount) : undefined,
       cameraAligned,
-      complianceDetails: complianceDetails || {},
+      complianceDetails: {
+        panNumber: complianceDetails?.panNumber,
+        gstNumber: complianceDetails?.gstNumber,
+      },
       heatMapping,
       listingType: listingType || 'free',
       preferredTiming,
-      photos: filteredPhotos,
+      photos: photos && Array.isArray(photos) ? photos : [],
       price: Number(price),
-      agentId,
+      owner: userId,
+      agentId: agentId && mongoose.Types.ObjectId.isValid(agentId) ? agentId : undefined,
+      bankDetails: bankDetails || undefined,
       ageGroupMix,
-      availability: [],
+      availabilities: availabilities && Array.isArray(availabilities) ? availabilities : [],
+      priorityLevel: listingType === 'premium' ? 1 : 0,
     });
 
-    // Save initial availabilities
-    if (availabilities && Array.isArray(availabilities) && availabilities.length > 0) {
-      for (const avail of availabilities) {
-        if (avail.startDate && avail.endDate) {
-          const availability = await Availability.create({
-            spaceId: space._id,
-            startDate: new Date(avail.startDate),
-            endDate: new Date(avail.endDate),
-            price: avail.price ? Number(avail.price) : undefined,
-          });
-          space.availability.push(availability._id);
-        }
-      }
-    }
-
-    await space.save();
-
-    if (!user.spaces) user.spaces = [];
-    user.spaces.push(space._id);
-    user.spaceCount = user.spaces.length;
-
-    if (isFirstSpace && bankDetails) {
-      user.bankDetails = bankDetails;
-    }
-
-    await user.save();
+    console.log('Space created successfully: spaceId=', space._id, 'name=', space.name); // Debug
 
     res.status(201).json({
       status: 'success',
-      message: 'Space registered',
-      data: { space },
+      message: 'Space created successfully',
+      data: space,
     });
   } catch (err) {
-    console.error(`Error in createSpace: ${err.message}`, {
-      stack: err.stack,
-      requestBody: req.body,
-      userId: req.user?.id,
-    });
-    res.status(err.statusCode || 500).json({
+    console.error('Error in createSpace:', err.message, err.stack);
+    res.status(err.statusCode || 400).json({
       error: {
-        message: err.message || 'Internal server error',
-        status: err.statusCode || 500,
+        message: err.message || 'Failed to create space',
+        status: err.statusCode || 400,
       },
     });
   }
