@@ -275,15 +275,38 @@ import SubscriptionPage from './pages/SubscriptionPage';
 import Success from './pages/Success';
 import TelecallerDashboard from './Dashboard/TelecallerDashboard';
 import PaymentCheckout from './components/PaymentCheckout';
+// import BSuccess from './pages/BookingSuccess';
+import BLookWorkVendor from './pages/BlookworkVendor';
+import CampaignPage from './pages/CampaignPage';
+import CampaignAnalytics from './pages/CampaignAnalytics';
+import BookingSuccess from './pages/BookingSuccess';
+import CampaignSummary from './pages/CampaignSummary';
+import BLookPerkSuccess from './pages/BlookperkSucces';
+import Support from './pages/Support';
+import Calendar from './pages/Calender';
+import Payments from './pages/Payments';
+import Dashboard1 from './pages/Dashboard1';
 
 const App = () => {
   return (
     <div>
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
+
+
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/navbar" element={<Navbar />} />
+        <Route path="/blookwork-vendor" element={<BLookWorkVendor/>} />
+        <Route path="/campaigns" element={<CampaignPage/>} />
+        <Route path="/blookwork-vendor" element={<BLookWorkVendor/>} />
+        <Route path="/campaigns/summary/:id" element={<CampaignSummary/>} />
+        <Route path="/analyticsq" element={<CampaignAnalytics/>} />
+        <Route path="/blookperks-success" element={<BLookPerkSuccess/>} />
+        <Route path="/dashboards" element={<Dashboard1/>} />
+
+
+        <Route path="/success"  element={<BookingSuccess/>} />
         <Route path="/payment" element={<SubscriptionPage/>} />
         <Route path="/browse-spaces" element={<BrowseSpaces />} />
         <Route path="/spaces/:spaceId/availability" element={<AvailabilityCalendar />} />
@@ -332,6 +355,7 @@ const App = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/auth-redirect" element={<AuthRedirect />} />
         <Route path="/profile" element={<Profile />} />
+
         <Route
           path="/admin-dashboard"
           element={
@@ -380,9 +404,14 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route path="/calendar" element={<Calendar/>} />
+        <Route path="/payments" element={<Payments/>} />
+        {/* <Route path="/analytics" element={<Analytics />} /> */}
+        <Route path="/support" element={<Support/>} />
       </Routes>
+      
     </div>
   );
 };
 
-export default App;
+export default App; 

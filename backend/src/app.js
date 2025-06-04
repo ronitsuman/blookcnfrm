@@ -40,7 +40,7 @@ app.use('/api/analytics',analyticsRoutes)
 app.use('/api/subscriptions',subscriptionRoutes)
 app.use('/api/availabilities', availablityRoutes)
 app.use('/api/bookings',bookingRoutes)
-
+app.use('/api/campaigns',campaignRoutes)
 
 // Health check
 app.get('/health', (req, res) => {

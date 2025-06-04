@@ -39,5 +39,9 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       open: true,
     },
+    optimizeDeps:{
+      include: [
+        'qrcode.react']
+    }
   };
 });

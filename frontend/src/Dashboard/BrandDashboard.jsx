@@ -421,6 +421,12 @@ const BrandDashboard = () => {
           >
             Analytics Dashboard
           </Button>
+          <Button
+            className="border p-4 rounded-2xl bg-blue-400 text-white"
+            onClick={() => navigate('/dashboards')}
+          >
+            Blookperk Dashboard
+          </Button>
         </div>
 
         {/* Bookings Section */}
