@@ -15,6 +15,18 @@ import bookingRoutes from './api/Booking/router/bookingrouter.js'
 import analyticsRoutes from './api/Analytics/router/analyticsRoute.js'
 import subscriptionRoutes from './api/subscription/router/subscriptionrouter.js'
 
+import movementRoutes from './routes/movementRoutes.js';
+import visitRoutes from './routes/visitRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
+import commissionRoutes from './routes/commissionRoutes.js';
+import targetRoutes from './routes/targetRoutes.js';
+import teleLeadRoutes from './routes/teleLeadRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
+
+
+
+
+
 loadEnv();
 
 cloudinary.config({
@@ -41,6 +53,14 @@ app.use('/api/subscriptions',subscriptionRoutes)
 app.use('/api/availabilities', availablityRoutes)
 app.use('/api/bookings',bookingRoutes)
 app.use('/api/campaigns',campaignRoutes)
+
+app.use('/api/movements', movementRoutes);
+app.use('/api/visits', visitRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/commissions', commissionRoutes);
+app.use('/api/targets', targetRoutes);
+app.use('/api/teleleads', teleLeadRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
